@@ -1,0 +1,431 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║        🏠 ROOMMATE CHORE TRACKER - PROJECT DEVELOPMENT PLAN 🏠               ║
+║                                                                              ║
+║                          6-Person Team Structure                             ║
+║                        4 Hours/Week per Person                              ║
+║                      (2 Individual + 2 Team Hours)                          ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+                              ████████████████████
+                              ██  TEAM STRUCTURE  ██
+                              ████████████████████
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           👥 TEAM 1: USER MANAGEMENT                        │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+👤 PERSON A - Authentication Frontend Specialist
+   ├── 📱 User login/register screens  
+   ├── 🔐 Password reset functionality
+   ├── 👤 User profile management
+   └── 🏠 Create/join roommate groups
+
+👤 PERSON B - Authentication Backend Specialist  
+   ├── 🔥 Firebase Auth integration
+   ├── 👥 Group member management
+   ├── 🛡️ Security & session handling
+   └── 🔗 API connections
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          🏆 TEAM 2: CORE FEATURES                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+👤 PERSON C - Chore Management Specialist
+   ├── ✅ Create/edit/delete chores
+   ├── 🏷️ Chore categories and tags  
+   ├── 📅 Due dates and scheduling
+   └── 👥 Chore assignment system
+
+👤 PERSON D - Task Tracking Specialist
+   ├── ✔️ Mark tasks complete/incomplete
+   ├── 📊 Progress tracking dashboard
+   ├── 📜 Task history logging
+   └── 🔔 Notification system
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           🎨 TEAM 3: UI & SYNC                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+👤 PERSON E - UI/UX Design Specialist
+   ├── 🎨 App theme and styling system
+   ├── 🌙 Dark/light mode toggle
+   ├── 📱 Responsive layouts  
+   └── ✨ Animations and transitions
+
+👤 PERSON F - Real-time Sync Specialist
+   ├── ☁️ Firebase Firestore setup
+   ├── 🔄 Real-time data synchronization
+   ├── 📱 Offline functionality
+   └── ⚡ Conflict resolution
+
+
+                              ████████████████████
+                              ██   TIMELINE      ██
+                              ████████████████████
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║  MONTH 1 (WEEKS 1-4): FOUNDATION BUILDING                                     ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║  Week 1-2: 🎓 LEARNING PHASE                                                 ║
+║  ├── Team Sessions: React Native tutorials together                           ║
+║  ├── Individual: Practice with Expo CLI and basic components                  ║
+║  └── Deliverable: Everyone creates "Hello World" app                          ║
+║                                                                               ║
+║  Week 3-4: 🏗️ BASIC IMPLEMENTATION                                           ║
+║  ├── Team A: Simple login/register forms                                      ║
+║  ├── Team B: Basic chore creation screens                                     ║
+║  ├── Team C: Initial app styling and navigation                               ║
+║  └── Deliverable: Individual screens working locally                          ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║  MONTH 2 (WEEKS 5-8): CORE FUNCTIONALITY                                      ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║  Week 5-6: 🔗 INTEGRATION PHASE                                              ║
+║  ├── Connect authentication with chore management                             ║
+║  ├── Implement basic Firebase integration                                     ║
+║  └── Deliverable: Users can create accounts and add chores                    ║
+║                                                                               ║
+║  Week 7-8: 👥 COLLABORATION FEATURES                                         ║
+║  ├── Multi-user roommate groups                                               ║
+║  ├── Real-time chore updates                                                  ║
+║  └── Deliverable: Multiple users can share and complete chores                ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║  MONTH 3 (WEEKS 9-12): POLISH & TESTING                                       ║
+╠═══════════════════════════════════════════════════════════════════════════════╣
+║                                                                               ║
+║  Week 9-10: 🐛 BUG FIXES & UI POLISH                                         ║
+║  ├── Cross-team testing and feedback                                          ║
+║  ├── UI/UX improvements and animations                                        ║
+║  └── Deliverable: Stable, polished user experience                            ║
+║                                                                               ║
+║  Week 11-12: 🚀 FINAL TESTING & DEMO PREP                                    ║
+║  ├── End-to-end testing scenarios                                             ║
+║  ├── Performance optimization                                                 ║
+║  └── Deliverable: Demo-ready application                                      ║
+║                                                                               ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+
+                              ████████████████████
+                              ██ WEEKLY SCHEDULE ██
+                              ████████████████████
+
+🕐 INDIVIDUAL WORK (2 HOURS PER WEEK)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  📅 Structure for Personal Development Time                                 │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ⏰ 30 minutes: Review team decisions and plan work                         │
+│  ⏰ 60 minutes: Core development on assigned features                       │
+│  ⏰ 30 minutes: Document progress and prepare for team session              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+🤝 TEAM SESSIONS (2 HOURS TOGETHER)
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  📅 Rotating Weekly Focus Areas                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  Week 1: 📋 Planning and Architecture                                      │
+│  Week 2: 🔍 Code Reviews and Integration                                   │
+│  Week 3: 🎓 Learning Session (New React Native Concepts)                   │
+│  Week 4: 🎯 Demo, Retrospective, and Next Sprint Planning                  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+                              ████████████████████
+                              ██ FILE STRUCTURE  ██
+                              ████████████████████
+
+RoommateChoreTracker/
+│
+├── 🔐 app/                              # Main App Structure (Expo Router)
+│   ├── (auth)/                          # Authentication Flow
+│   │   ├── login.tsx                    # 👤 Person A - Login Screen
+│   │   ├── register.tsx                 # 👤 Person A - Registration Screen  
+│   │   ├── forgot-password.tsx          # 👤 Person A - Password Reset
+│   │   └── _layout.tsx                  # 👤 Person A - Auth Layout
+│   │
+│   ├── (tabs)/                          # Main App Tabs
+│   │   ├── index.tsx                    # 🏠 Dashboard/Home Screen
+│   │   ├── chores.tsx                   # 👤 Person C - Chore List Screen
+│   │   ├── profile.tsx                  # 👤 Person A - User Profile
+│   │   ├── analytics.tsx                # 👤 Person D - Progress Analytics
+│   │   └── _layout.tsx                  # Tab Navigation Layout
+│   │
+│   ├── (modals)/                        # Modal Screens
+│   │   ├── create-chore.tsx             # 👤 Person C - New Chore Modal
+│   │   ├── edit-chore.tsx               # 👤 Person C - Edit Chore Modal
+│   │   ├── join-group.tsx               # 👤 Person B - Join Roommate Group
+│   │   └── group-settings.tsx           # 👤 Person B - Group Management
+│   │
+│   └── _layout.tsx                      # Root App Layout
+│
+├── 🧩 components/                       # Reusable UI Components
+│   ├── auth/                            # Authentication Components
+│   │   ├── LoginForm.tsx                # 👤 Person A - Login Form Logic
+│   │   ├── RegisterForm.tsx             # 👤 Person A - Registration Form
+│   │   └── AuthButton.tsx               # 👤 Person A - Themed Auth Button
+│   │
+│   ├── chores/                          # Chore-Related Components
+│   │   ├── ChoreCard.tsx                # 👤 Person C - Individual Chore Display
+│   │   ├── ChoreList.tsx                # 👤 Person C - List of Chores
+│   │   ├── ChoreForm.tsx                # 👤 Person C - Create/Edit Chore Form
+│   │   ├── AssignmentPicker.tsx         # 👤 Person C - Assign to Roommate
+│   │   └── ChoreStatus.tsx              # 👤 Person D - Status Indicator
+│   │
+│   ├── tracking/                        # Task Tracking Components
+│   │   ├── ProgressChart.tsx            # 👤 Person D - Progress Visualization
+│   │   ├── CompletionButton.tsx         # 👤 Person D - Mark Complete Button
+│   │   ├── TaskHistory.tsx              # 👤 Person D - Completion History
+│   │   └── NotificationCenter.tsx       # 👤 Person D - In-App Notifications
+│   │
+│   ├── groups/                          # Roommate Group Components
+│   │   ├── GroupCard.tsx                # 👤 Person B - Group Display Card
+│   │   ├── MemberList.tsx               # 👤 Person B - List Group Members
+│   │   ├── InviteLink.tsx               # 👤 Person B - Generate/Share Invite
+│   │   └── GroupStats.tsx               # 👤 Person B - Group Analytics
+│   │
+│   └── ui/                              # Base UI Components
+│       ├── Button.tsx                   # 👤 Person E - Themed Button
+│       ├── Input.tsx                    # 👤 Person E - Themed Input Field
+│       ├── Card.tsx                     # 👤 Person E - Styled Card Component
+│       ├── Modal.tsx                    # 👤 Person E - Base Modal
+│       ├── LoadingSpinner.tsx           # 👤 Person E - Loading Animation
+│       ├── DatePicker.tsx               # 👤 Person E - Custom Date Picker
+│       └── Toast.tsx                    # 👤 Person E - Toast Notifications
+│
+├── 🔥 services/                         # Backend Integration
+│   ├── auth/                            # Authentication Services
+│   │   ├── authService.ts               # 👤 Person B - Firebase Auth Wrapper
+│   │   ├── userService.ts               # 👤 Person B - User Data Management
+│   │   └── sessionManager.ts            # 👤 Person B - Session Handling
+│   │
+│   ├── firestore/                       # Database Services
+│   │   ├── choreService.ts              # 👤 Person F - Chore CRUD Operations
+│   │   ├── groupService.ts              # 👤 Person F - Group Management
+│   │   ├── syncService.ts               # 👤 Person F - Real-time Sync Logic
+│   │   └── offlineService.ts            # 👤 Person F - Offline Data Handling
+│   │
+│   └── notifications/                   # Notification Services
+│       ├── pushNotifications.ts         # 👤 Person D - Push Notification Setup
+│       ├── localNotifications.ts        # 👤 Person D - Local Reminders
+│       └── notificationScheduler.ts     # 👤 Person D - Schedule Chore Reminders
+│
+├── 🎨 styles/                           # Styling and Themes
+│   ├── themes/                          # Theme Configuration
+│   │   ├── lightTheme.ts                # 👤 Person E - Light Mode Colors
+│   │   ├── darkTheme.ts                 # 👤 Person E - Dark Mode Colors
+│   │   └── themeProvider.tsx            # 👤 Person E - Theme Context
+│   │
+│   ├── components/                      # Component Styles
+│   │   ├── authStyles.ts                # 👤 Person E - Authentication UI Styles
+│   │   ├── choreStyles.ts               # 👤 Person E - Chore Component Styles
+│   │   └── layoutStyles.ts              # 👤 Person E - Layout and Navigation
+│   │
+│   └── globalStyles.ts                  # 👤 Person E - App-wide Styles
+│
+├── 🎣 hooks/                            # Custom React Hooks
+│   ├── useAuth.ts                       # 👤 Person B - Authentication State Hook
+│   ├── useChores.ts                     # 👤 Person C - Chore Management Hook
+│   ├── useGroups.ts                     # 👤 Person B - Group Management Hook
+│   ├── useRealTimeSync.ts               # 👤 Person F - Real-time Data Hook
+│   ├── useNotifications.ts              # 👤 Person D - Notification Management
+│   └── useTheme.ts                      # 👤 Person E - Theme Management Hook
+│
+├── 📊 types/                            # TypeScript Type Definitions
+│   ├── auth.types.ts                    # 👤 Person B - Authentication Types
+│   ├── chore.types.ts                   # 👤 Person C - Chore Data Types
+│   ├── user.types.ts                    # 👤 Person B - User Profile Types
+│   ├── group.types.ts                   # 👤 Person B - Roommate Group Types
+│   └── notification.types.ts            # 👤 Person D - Notification Types
+│
+├── 🧪 __tests__/                        # Testing Files
+│   ├── components/                      # Component Tests (Everyone)
+│   ├── services/                        # Service Tests (Everyone)
+│   ├── hooks/                           # Hook Tests (Everyone)
+│   └── integration/                     # Integration Tests (Team Effort)
+│
+└── 📄 Configuration Files
+    ├── firebase.config.ts               # 👤 Person F - Firebase Configuration
+    ├── app.json                         # Expo Configuration
+    ├── package.json                     # Dependencies and Scripts
+    ├── tsconfig.json                    # TypeScript Configuration
+    └── .env                             # Environment Variables
+
+
+                              ████████████████████
+                              ██ SAMPLE FEATURES  ██
+                              ████████████████████
+
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                        🏠 COMPLETED APP FEATURES                             ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
+
+📱 USER AUTHENTICATION (Person A & B)
+├── ✅ Email/password registration and login
+├── ✅ Password reset via email
+├── ✅ User profile with avatar and preferences  
+├── ✅ Secure session management
+└── ✅ Social login options (Google/Apple)
+
+🏠 ROOMMATE GROUP MANAGEMENT (Person B)
+├── ✅ Create new roommate groups
+├── ✅ Join groups via invite codes/links
+├── ✅ Manage group members and permissions
+├── ✅ Group settings and customization
+└── ✅ Leave group functionality
+
+✅ CHORE MANAGEMENT (Person C)
+├── ✅ Create chores with titles, descriptions, due dates
+├── ✅ Assign chores to specific roommates
+├── ✅ Set recurring chore schedules (daily, weekly, monthly)
+├── ✅ Categorize chores (cleaning, kitchen, bathroom, etc.)
+├── ✅ Set priority levels and difficulty ratings
+└── ✅ Edit and delete existing chores
+
+📊 TASK TRACKING (Person D)  
+├── ✅ Mark chores as complete with timestamp
+├── ✅ View completion history and statistics
+├── ✅ Send completion notifications to group
+├── ✅ Track overdue chores and send reminders
+├── ✅ Personal and group progress dashboards
+└── ✅ Achievement system and point tracking
+
+🎨 UI/UX FEATURES (Person E)
+├── ✅ Beautiful dark and light theme options
+├── ✅ Smooth animations and transitions
+├── ✅ Responsive design for different screen sizes
+├── ✅ Intuitive navigation with tab and stack navigation
+├── ✅ Loading states and error handling
+└── ✅ Accessibility features and screen reader support
+
+☁️ REAL-TIME SYNC (Person F)
+├── ✅ Instant chore updates across all devices
+├── ✅ Offline functionality with local storage
+├── ✅ Conflict resolution for simultaneous edits
+├── ✅ Automatic data backup to Firebase
+├── ✅ Push notifications for important updates
+└── ✅ Cross-platform compatibility (iOS/Android/Web)
+
+
+                              ████████████████████
+                              ██  SAMPLE SCREENS ██
+                              ████████████████████
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          📱 LOGIN SCREEN EXAMPLE                            │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│                         🏠 ChoreTracker                                    │
+│                                                                             │
+│                    ┌─────────────────────────┐                            │
+│                    │  📧 Email Address       │                            │
+│                    │  ___________________    │                            │
+│                    └─────────────────────────┘                            │
+│                                                                             │
+│                    ┌─────────────────────────┐                            │
+│                    │  🔒 Password            │                            │
+│                    │  ___________________    │                            │
+│                    └─────────────────────────┘                            │
+│                                                                             │
+│                    [      🔐 Sign In       ]                              │
+│                                                                             │
+│                         Forgot Password?                                   │
+│                                                                             │
+│                    [   📝 Create Account   ]                              │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        🏠 DASHBOARD SCREEN EXAMPLE                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  🏠 Miller House Group                                     🔔 👤          │
+│                                                                             │
+│  📊 This Week's Progress: ████████░░ 80%                                   │
+│                                                                             │
+│  🚨 OVERDUE CHORES                                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │ 🍽️  Wash Dishes        👤 Sarah    📅 2 days ago     [Complete]      │ │
+│  │ 🗑️  Take Out Trash     👤 Mike     📅 1 day ago      [Complete]       │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  📅 TODAY'S CHORES                                                          │
+│  ┌───────────────────────────────────────────────────────────────────────┐ │
+│  │ 🧹  Vacuum Living Room 👤 Alex     📅 Due Today      [Complete]       │ │
+│  │ 🚿  Clean Bathroom     👤 Jordan   📅 Due Today      [Complete]       │ │
+│  │ 🍳  Kitchen Deep Clean 👤 You      📅 Due Today      [Start]          │ │
+│  └───────────────────────────────────────────────────────────────────────┘ │
+│                                                                             │
+│  ⚡ RECENT COMPLETIONS                                                       │
+│  ✅ Sarah completed "Wash Dishes" - 30 min ago                             │
+│  ✅ Mike completed "Grocery Shopping" - 2 hours ago                        │
+│                                                                             │
+│  ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐                         │
+│  │🏠 Home  │ │✅ Chores│ │📊 Stats │ │👤Profile│                         │
+│  └─────────┘ └─────────┘ └─────────┘ └─────────┘                         │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+                              ████████████████████
+                              ██ SUCCESS METRICS ██
+                              ████████████████████
+
+🎯 INDIVIDUAL LEARNING GOALS
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ✅ Each person builds 2-3 complete features from start to finish           │
+│  ✅ Everyone contributes to UI, business logic, and data layers             │
+│  ✅ Cross-functional understanding of React Native ecosystem                │
+│  ✅ Experience with modern development tools (Git, Firebase, TypeScript)    │
+│  ✅ Collaborative coding skills (code reviews, pair programming)            │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+🤝 TEAM COLLABORATION SUCCESS  
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  ✅ Regular, productive team sessions with knowledge sharing                │
+│  ✅ Successful feature integration across team boundaries                   │
+│  ✅ Working prototype deployed to app stores or web platform                │
+│  ✅ Clear documentation and handoff procedures                              │
+│  ✅ Sustainable development practices for future maintenance                │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+🏆 FINAL DELIVERABLES
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  📱 Fully functional roommate chore tracking mobile application             │
+│  👥 Multi-user collaboration with real-time synchronization                │
+│  🔔 Push notification system for chore reminders                           │
+│  📊 Progress tracking and analytics dashboard                               │
+│  🎨 Polished UI with dark/light theme support                              │
+│  ☁️ Cloud-based data storage with offline capabilities                     │
+│  📚 Complete project documentation and user guide                          │
+│  🧪 Comprehensive test suite covering core functionality                   │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                                                                              ║
+║                        🎉 PROJECT COMPLETION GOALS 🎉                       ║
+║                                                                              ║
+║  By the end of this 12-week journey, your team will have:                    ║
+║                                                                              ║
+║  🔥 Built a real-world mobile application from scratch                       ║
+║  💪 Gained practical React Native development experience                     ║
+║  🤝 Developed strong collaborative coding skills                             ║
+║  📱 Created something you can actually use in your daily life!               ║
+║  🌟 Added an impressive project to your developer portfolio                  ║
+║                                                                              ║
+║                         Ready to change the world,                           ║
+║                           one chore at a time! 🧹✨                         ║
+║                                                                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
