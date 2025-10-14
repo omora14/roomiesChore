@@ -3,10 +3,6 @@ import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react
 // Import necessary components for a login screen
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
-// Assuming you have an Icon component for the social logins, 
-// I'll add a placeholder import. You might need to install 'react-native-vector-icons' or similar.
-// import Ionicons from 'react-native-vector-icons/Ionicons'; 
 
 export default function LoginScreen() {
   return (
@@ -67,17 +63,19 @@ export default function LoginScreen() {
         </View>
 
         {/* Forgot Password Link */}
-        <Link href="/forgot-password" style={styles.link}>
+        {/* this function haven't done yet */}
+        {/* <Link href="/forgot-password" style={styles.link}>
           <ThemedText type="defaultSemiBold">Forgot password?</ThemedText>
-        </Link>
+        </Link> */}
         
         {/* Sign Up Link */}
-        <View style={styles.signUpContainer}>
+        {/* this function haven't done yet */}
+        {/* <View style={styles.signUpContainer}>
           <ThemedText>Don't have an account? </ThemedText>
           <Link href="/sign-up" style={styles.link}>
             <ThemedText type="defaultSemiBold">Sign Up</ThemedText>
           </Link>
-        </View>
+        </View> */}
       </ScrollView>
     </ThemedView>
   );
