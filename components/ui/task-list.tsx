@@ -19,7 +19,7 @@ export default function TaskList({ tasks }: { tasks: { id: number, title: string
       ItemSeparatorComponent={() => <View style={{ height: 10 }} />} // space between items
       keyExtractor={ (item, index) => index.toString()}
       ListEmptyComponent={
-        <ThemedText>No groups yet!</ThemedText>
+        <ThemedText>No groups created yet!</ThemedText>
       }
       />
 )};
