@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { ScrollView, StyleSheet, TextInput, TouchableOpacity, View } from 'react-native';
 // Remove unused imports like Image, Platform, HelloWave, ParallaxScrollView
 // Import necessary components for a login screen
@@ -5,6 +6,10 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 
 export default function LoginScreen() {
+  const handleSignUpRedirect = () => {
+    router.push('/CreateAnAccount'); // Navigate to your CreateAnAccount page
+  };
+
   return (
     <ThemedView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -68,14 +73,15 @@ export default function LoginScreen() {
           <ThemedText type="defaultSemiBold">Forgot password?</ThemedText>
         </Link> */}
         
-        {/* Sign Up Link */}
-        {/* this function haven't done yet */}
-        {/* <View style={styles.signUpContainer}>
+        {/* Sign Up Link - Updated */}
+        <View style={styles.signUpContainer}>
           <ThemedText>Don't have an account? </ThemedText>
-          <Link href="/sign-up" style={styles.link}>
-            <ThemedText type="defaultSemiBold">Sign Up</ThemedText>
-          </Link>
-        </View> */}
+          <TouchableOpacity onPress={handleSignUpRedirect}>
+            <ThemedText type="defaultSemiBold" style={styles.link}>
+              Sign Up
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </ThemedView>
   );
