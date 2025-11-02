@@ -1,8 +1,9 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "", // Add your apiKey here
+  apiKey: "AIzaSyB3gM0QFeOmyAJgQm4nYUyu2KEOWz5eS8M", // Add your apiKey here
   authDomain: "roomieschore.firebaseapp.com",
   projectId: "roomieschore",
   storageBucket: "roomieschore.firebasestorage.app",
@@ -13,3 +14,5 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+export const db = getFirestore(app);

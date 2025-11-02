@@ -50,6 +50,7 @@ export default function CreateAnAccount() {
 
             console.log('Account creation data:', formData);
             Alert.alert('Success', 'Account created successfully!');
+            router.replace('../(tabs)/dashboard');
 
         } catch (error: any) {
             console.error('Error creating account:', error);
@@ -62,8 +63,28 @@ export default function CreateAnAccount() {
             // Check if your device supports Google Play
             await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
             
-            // Get the users ID token
-            const { idToken } = await GoogleSignin.signIn();
+            // Get the user's sign-in response
+            const userInfo = await GoogleSignin.signIn();
+            console.log('Full Google Sign-In Response:', userInfo); // Debug log
+            
+            // Try different ways to get the idToken based on package version
+            let idToken;
+            
+            // For newer versions of the package
+            if (userInfo.data?.idToken) {
+                idToken = userInfo.data.idToken;
+            }
+            // Alternative method - get tokens separately
+            else {
+                const tokens = await GoogleSignin.getTokens();
+                idToken = tokens.idToken;
+            }
+            
+            console.log('Extracted idToken:', idToken ? 'Found' : 'Not found'); // Debug log
+            
+            if (!idToken) {
+                throw new Error('No ID token received from Google Sign-In');
+            }
             
             // Create a Google credential with the token
             const googleCredential = GoogleAuthProvider.credential(idToken);
@@ -85,10 +106,20 @@ export default function CreateAnAccount() {
             }
             
             Alert.alert('Success', 'Signed in with Google successfully!');
+            router.replace('../(tabs)/dashboard'); // Navigate to main app
             
         } catch (error: any) {
             console.error('Google Sign-In Error:', error);
-            Alert.alert('Error', error.message || 'Failed to sign in with Google');
+            
+            // More specific error handling
+            if (error.code === 'SIGN_IN_CANCELLED') {
+                // User cancelled the sign-in
+                return;
+            } else if (error.code === 'IN_PROGRESS') {
+                Alert.alert('Error', 'Sign in already in progress');
+            } else {
+                Alert.alert('Error', error.message || 'Failed to sign in with Google');
+            }
         }
     };
 
@@ -115,7 +146,7 @@ export default function CreateAnAccount() {
             {/* Username Input */}
             <View style={styles.inputWrapper}>
                 <View style={styles.iconContainer}>
-                    <Ionicons name="person" size={24} color="#fff" />
+                    <Ionicons name="person" size={24} color="#fff" /> {/* Fixed: changed from username="username" to name="person" */}
                 </View>
                 <TextInput
                     style={styles.input}

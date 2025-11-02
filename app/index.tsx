@@ -5,7 +5,7 @@ import Logo from '../assets/images/logo.svg';
 export default function SplashScreen() {
   useEffect(() => {
     const timer = setTimeout(() => {
-        router.replace('/login');
+        router.replace('./(auth)/login');
     }, 2000);
   
   return () => clearTimeout(timer);
