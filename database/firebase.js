@@ -13,14 +13,13 @@ const firebaseConfig = {
   measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-// Validate that all required environment variables are set
 if (!firebaseConfig.apiKey || !firebaseConfig.authDomain || !firebaseConfig.projectId) {
   throw new Error(
     'Missing Firebase configuration. Please check your .env file and ensure all EXPO_PUBLIC_FIREBASE_* variables are set.'
   );
 }
 
-// Initialize Firebase app (prevent duplicate initialization)
+// (prevent duplicate initialization)
 let app;
 if (getApps().length === 0) {
   app = initializeApp(firebaseConfig);
@@ -30,7 +29,6 @@ if (getApps().length === 0) {
   console.log('Firebase app already initialized, using existing instance');
 }
 
-// Initialize Auth
 const auth = getAuth(app);
 
 export { auth };

@@ -58,7 +58,7 @@ export default function LoginScreen() {
       case "auth/invalid-api-key":
         return "Configuration error. Please contact support.";
       default:
-        // Check if it's a network-related error message
+        // if it's a network-related error message
         if (errorMessage?.toLowerCase().includes("network") || 
             errorMessage?.toLowerCase().includes("internet") ||
             errorMessage?.toLowerCase().includes("disconnected")) {
@@ -96,24 +96,13 @@ export default function LoginScreen() {
 
     setLoading(true);
 
-    // Test Firebase connectivity first
+    // connectivity first
     try {
       const testUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${auth.app.options.apiKey}`;
       console.log("Testing Firebase connectivity to:", testUrl.substring(0, 50) + "...");
     } catch (testError) {
       console.error("Firebase connectivity test error:", testError);
     }
-
-    // Log Firebase auth state for debugging
-    console.log("Firebase Auth State:", {
-      currentUser: auth.currentUser,
-      app: auth.app.name,
-      config: {
-        apiKey: auth.app.options.apiKey?.substring(0, 10) + "...",
-        authDomain: auth.app.options.authDomain,
-        projectId: auth.app.options.projectId
-      }
-    });
 
     try {
       if (mode === "login") {
@@ -144,7 +133,7 @@ export default function LoginScreen() {
       const errorCode = err?.code || "";
       const errorMessage = err?.message || "";
       
-      // Log the full error for debugging
+      // full error for debugging
       console.log("Error Code:", errorCode);
       console.log("Error Message:", errorMessage);
       
