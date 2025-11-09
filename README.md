@@ -249,10 +249,6 @@ roomiesChore/
 3. Test thoroughly on multiple platforms
 4. Submit a pull request with a clear description
 
-## License
-
-[Add your license information here]
-
 ## Support
 
 For issues and questions, please open an issue in the repository or contact the development team.
