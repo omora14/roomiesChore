@@ -43,9 +43,6 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    },
-    "extra": {
-      "EXPO_PUBLIC_FIREBASE_API": ""
     }
   }
 }
