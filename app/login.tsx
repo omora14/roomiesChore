@@ -1,106 +1,461 @@
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { auth } from "@/database/firebase";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { router } from "expo-router";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, TextInput, TouchableOpacity } from "react-native";
+import { ActivityIndicator, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+
+type AuthMode = "login" | "signup";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [mode, setMode] = useState<AuthMode>("login");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
-  // ----- LOGIN -----
-  const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert("Missing Fields", "Please enter both email and password.");
-      return;
-    }
+  const backgroundColor = useThemeColor({}, "background");
+  const textColor = useThemeColor({}, "text");
+  const tintColor = useThemeColor({}, "tint");
+  const isDark = backgroundColor !== "#fff" && backgroundColor !== "#FFFFFF";
 
-    try {
-      await signInWithEmailAndPassword(auth, email.trim(), password);
-      Alert.alert("Success", "You’re logged in!");
-      // navigate to main screen here if needed
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      Alert.alert("Login Failed", message);
+  const resetMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
+  const handleEmailChange = (text: string) => {
+    setEmail(text);
+    resetMessages();
+  };
+
+  const handlePasswordChange = (text: string) => {
+    setPassword(text);
+    resetMessages();
+  };
+
+  const getErrorMessage = (errorCode: string, errorMessage?: string): string => {
+    switch (errorCode) {
+      case "auth/user-not-found":
+        return "No account found with this email address.";
+      case "auth/wrong-password":
+        return "Incorrect password. Please try again.";
+      case "auth/email-already-in-use":
+        return "An account with this email already exists.";
+      case "auth/weak-password":
+        return "Password should be at least 6 characters.";
+      case "auth/invalid-email":
+        return "Please enter a valid email address.";
+      case "auth/too-many-requests":
+        return "Too many failed attempts. Please try again later.";
+      case "auth/network-request-failed":
+        return "No internet connection. Please check your network and try again.";
+      case "auth/operation-not-allowed":
+        return "Email/password sign-in is not enabled. Please contact support.";
+      case "auth/invalid-api-key":
+        return "Configuration error. Please contact support.";
+      default:
+        // Check if it's a network-related error message
+        if (errorMessage?.toLowerCase().includes("network") || 
+            errorMessage?.toLowerCase().includes("internet") ||
+            errorMessage?.toLowerCase().includes("disconnected")) {
+          return "No internet connection. Please check your network and try again.";
+        }
+        return `An error occurred: ${errorMessage || errorCode || "Please try again."}`;
     }
   };
 
-// ----- SIGN UP -----
-const handleSignUp = async () => {
-  if (!email || !password) {
-    Alert.alert("Missing Fields", "Please enter both email and password.");
-    return;
-  }
+  const handleSubmit = async () => {
+    resetMessages();
 
-  if (password.length < 6) {
-    Alert.alert("Weak Password", "Password must be at least 6 characters.");
-    return;
-  }
+    // Validation
+    if (!email.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
 
-  try {
-    await createUserWithEmailAndPassword(auth, email.trim(), password);
-    Alert.alert("Success", "Account created!");
-    // navigate to main screen here if needed
-} catch (err) {
-  console.error("Signup Error:", err);
-  const message = err instanceof Error ? err.message : String(err);
-  Alert.alert("Sign Up Failed", message);
-}
-};
+    if (!password) {
+      setError("Please enter your password.");
+      return;
+    }
+
+    if (mode === "signup" && password.length < 6) {
+      setError("Password must be at least 6 characters long.");
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    setLoading(true);
+
+    // Test Firebase connectivity first
+    try {
+      const testUrl = `https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${auth.app.options.apiKey}`;
+      console.log("Testing Firebase connectivity to:", testUrl.substring(0, 50) + "...");
+    } catch (testError) {
+      console.error("Firebase connectivity test error:", testError);
+    }
+
+    // Log Firebase auth state for debugging
+    console.log("Firebase Auth State:", {
+      currentUser: auth.currentUser,
+      app: auth.app.name,
+      config: {
+        apiKey: auth.app.options.apiKey?.substring(0, 10) + "...",
+        authDomain: auth.app.options.authDomain,
+        projectId: auth.app.options.projectId
+      }
+    });
+
+    try {
+      if (mode === "login") {
+        await signInWithEmailAndPassword(auth, email.trim(), password);
+        setSuccess("Successfully logged in! Redirecting...");
+        // Redirect to dashboard after a brief delay to show success message
+        setTimeout(() => {
+          router.replace("/(tabs)/dashboard");
+        }, 1000);
+      } else {
+        await createUserWithEmailAndPassword(auth, email.trim(), password);
+        setSuccess("Account created successfully! You can now log in.");
+        // Optionally switch to login mode after successful signup
+        setTimeout(() => {
+          setMode("login");
+          setPassword("");
+          setSuccess(null);
+        }, 2000);
+      }
+    } catch (err: any) {
+      console.error("Auth Error Details:", {
+        code: err?.code,
+        message: err?.message,
+        fullError: err,
+        stack: err?.stack
+      });
+      
+      const errorCode = err?.code || "";
+      const errorMessage = err?.message || "";
+      
+      // Log the full error for debugging
+      console.log("Error Code:", errorCode);
+      console.log("Error Message:", errorMessage);
+      
+      const userFriendlyMessage = getErrorMessage(errorCode, errorMessage);
+      setError(userFriendlyMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ThemedView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <ThemedText style={styles.appTitle} type="title">Roomies Chore</ThemedText>
-        <ThemedText style={styles.appSubtitle} type="subtitle">Management App</ThemedText>
-        <ThemedText style={styles.loginTitle} type="subtitle">Login or Sign Up</ThemedText>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.header}>
+          <ThemedText style={styles.appTitle} type="title">
+            Roomies Chore
+          </ThemedText>
+          <ThemedText style={styles.appSubtitle} type="subtitle">
+            Management App
+          </ThemedText>
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          keyboardType="email-address"
-          autoCapitalize="none"
-          placeholderTextColor="#999"
-          value={email}
-          onChangeText={setEmail}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          secureTextEntry
-          placeholderTextColor="#999"
-          value={password}
-          onChangeText={setPassword}
-        />
+        {/* Mode Toggle */}
+        <View style={[styles.toggleContainer, { backgroundColor: backgroundColor === "#fff" ? "#f0f0f0" : "#2a2a2a" }]}>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              mode === "login" && [styles.toggleButtonActive, { backgroundColor: tintColor }],
+            ]}
+            onPress={() => {
+              setMode("login");
+              resetMessages();
+            }}
+            disabled={loading}
+          >
+            <ThemedText
+              style={[
+                styles.toggleButtonText,
+                mode === "login" && styles.toggleButtonTextActive,
+              ]}
+            >
+              Log In
+            </ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              mode === "signup" && [styles.toggleButtonActive, { backgroundColor: tintColor }],
+            ]}
+            onPress={() => {
+              setMode("signup");
+              resetMessages();
+            }}
+            disabled={loading}
+          >
+            <ThemedText
+              style={[
+                styles.toggleButtonText,
+                mode === "signup" && styles.toggleButtonTextActive,
+              ]}
+            >
+              Sign Up
+            </ThemedText>
+          </TouchableOpacity>
+        </View>
 
-        <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
-          <ThemedText style={styles.loginButtonText} type="defaultSemiBold">Login</ThemedText>
-        </TouchableOpacity>
+        <View style={styles.formContainer}>
+          {/* Email Input */}
+          <View style={styles.inputContainer}>
+            <ThemedText style={styles.label}>Email</ThemedText>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: backgroundColor === "#fff" ? "#f9f9f9" : "#1a1a1a",
+                  color: textColor,
+                  borderColor: error ? "#ff3b30" : backgroundColor === "#fff" ? "#ddd" : "#444",
+                },
+              ]}
+              placeholder="Enter your email"
+              placeholderTextColor={backgroundColor === "#fff" ? "#999" : "#666"}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={email}
+              onChangeText={handleEmailChange}
+              editable={!loading}
+            />
+          </View>
 
-        <TouchableOpacity style={[styles.loginButton, { backgroundColor: "#34C759" }]} onPress={handleSignUp}>
-          <ThemedText style={styles.loginButtonText} type="defaultSemiBold">Sign Up</ThemedText>
-        </TouchableOpacity>
+          {/* Password Input */}
+          <View style={styles.inputContainer}>
+            <ThemedText style={styles.label}>Password</ThemedText>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: backgroundColor === "#fff" ? "#f9f9f9" : "#1a1a1a",
+                  color: textColor,
+                  borderColor: error ? "#ff3b30" : backgroundColor === "#fff" ? "#ddd" : "#444",
+                },
+              ]}
+              placeholder="Enter your password"
+              placeholderTextColor={backgroundColor === "#fff" ? "#999" : "#666"}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={password}
+              onChangeText={handlePasswordChange}
+              editable={!loading}
+            />
+            {mode === "signup" && (
+              <ThemedText style={styles.hint}>
+                Password must be at least 6 characters
+              </ThemedText>
+            )}
+          </View>
+
+          {/* Error Message */}
+          {error && (
+            <View style={styles.messageContainer}>
+              <View style={[
+                styles.messageBox,
+                isDark ? styles.errorBoxDark : styles.errorBox,
+              ]}>
+                <Text style={isDark ? styles.errorTextDark : styles.errorText}>
+                  {error}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Success Message */}
+          {success && (
+            <View style={styles.messageContainer}>
+              <View style={[
+                styles.messageBox,
+                isDark ? styles.successBoxDark : styles.successBox,
+              ]}>
+                <Text style={isDark ? styles.successTextDark : styles.successText}>
+                  {success}
+                </Text>
+              </View>
+            </View>
+          )}
+
+          {/* Submit Button */}
+          <TouchableOpacity
+            style={[
+              styles.submitButton,
+              { backgroundColor: tintColor },
+              loading && styles.submitButtonDisabled,
+            ]}
+            onPress={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <ThemedText style={styles.submitButtonText} type="defaultSemiBold">
+                {mode === "login" ? "Log In" : "Sign Up"}
+              </ThemedText>
+            )}
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 24 },
-  scrollContent: { alignItems: "center", paddingTop: 50, paddingBottom: 50 },
-  appTitle: { fontSize: 28, marginTop: 20, textAlign: "center" },
-  appSubtitle: { fontSize: 20, marginBottom: 50, textAlign: "center" },
-  loginTitle: { fontSize: 24, marginBottom: 30 },
+  container: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
+    justifyContent: "center",
+  },
+  header: {
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  appTitle: {
+    fontSize: 32,
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  appSubtitle: {
+    fontSize: 18,
+    textAlign: "center",
+    opacity: 0.7,
+  },
+  toggleContainer: {
+    flexDirection: "row",
+    borderRadius: 12,
+    padding: 4,
+    marginBottom: 30,
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  toggleButtonActive: {
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  toggleButtonText: {
+    fontSize: 16,
+    fontWeight: "500",
+    opacity: 0.6,
+  },
+  toggleButtonTextActive: {
+    color: "white",
+    opacity: 1,
+    fontWeight: "600",
+  },
+  formContainer: {
+    width: "100%",
+  },
+  inputContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 14,
+    fontWeight: "600",
+    marginBottom: 8,
+    opacity: 0.8,
+  },
   input: {
-    width: "100%", padding: 15, marginVertical: 10,
-    borderWidth: 1, borderRadius: 8, borderColor: "#CCC",
-    backgroundColor: "white", color: "black"
+    width: "100%",
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    fontSize: 16,
   },
-  loginButton: {
-    width: "100%", padding: 15, borderRadius: 8,
-    alignItems: "center", marginTop: 20, marginBottom: 10,
-    backgroundColor: "#007AFF"
+  hint: {
+    fontSize: 12,
+    marginTop: 6,
+    opacity: 0.6,
   },
-  loginButtonText: { color: "white", fontSize: 18 },
+  messageContainer: {
+    marginBottom: 16,
+  },
+  messageBox: {
+    padding: 14,
+    borderRadius: 10,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  errorBox: {
+    backgroundColor: "#ffebee",
+  },
+  errorBoxDark: {
+    backgroundColor: "#3f1f1f",
+  },
+  successBox: {
+    backgroundColor: "#e8f5e9",
+  },
+  successBoxDark: {
+    backgroundColor: "#1f3f1f",
+  },
+  errorText: {
+    color: "#c62828",
+    fontSize: 14,
+    flex: 1,
+  },
+  errorTextDark: {
+    color: "#ef5350",
+    fontSize: 14,
+    flex: 1,
+  },
+  successText: {
+    color: "#2e7d32",
+    fontSize: 14,
+    flex: 1,
+  },
+  successTextDark: {
+    color: "#66bb6a",
+    fontSize: 14,
+    flex: 1,
+  },
+  submitButton: {
+    width: "100%",
+    padding: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  submitButtonDisabled: {
+    opacity: 0.6,
+  },
+  submitButtonText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "600",
+  },
 });
