@@ -1,10 +1,15 @@
 import { ThemedText } from '@/components/themed-text';
 import GroupCard from '@/components/ui/group-card';
 import TaskList from '@/components/ui/task-list';
+import { router } from 'expo-router';
 import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function DashboardScreen() {
+
+  const navigateToGroupDetail = (groupPage: string) => {
+    router.push(`../group/${groupPage}`);
+  };
 
   // Change to retrieve data for user's groups.
   const data: { name: string, color: string }[] = [
@@ -64,7 +69,7 @@ export default function DashboardScreen() {
       horizontal
       data={data}
       renderItem={({ item }) => (
-        <GroupCard name={item.name} color={item.color} />
+        <GroupCard name={item.name} color={item.color} onPress ={navigateToGroupDetail}/>
       )}
       contentContainerStyle={{ padding: 16 }}
       ItemSeparatorComponent={() => <View style={{ width: 16 }} />} // space between items
