@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 
-export default function GroupCard({ name, color = '#4B6BFB', onPress }: {name: string; color?: string; onPress?: any }) {
+export default function GroupCard({ name, color = '#4B6BFB', id, onPress }: {name: string; id: string; color?: string; onPress?: any }) {
   return (
     <TouchableOpacity onPress={onPress} style={[styles.card, { backgroundColor: color }]}>
       <Text style={styles.name}>{name}</Text>
