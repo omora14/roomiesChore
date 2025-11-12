@@ -1,25 +1,68 @@
 import { ThemedText } from '@/components/themed-text';
 import React from 'react';
-import { FlatList, Text, TouchableOpacity, View } from 'react-native';
+import { FlatList, TouchableOpacity, View } from 'react-native';
 
-export default function TaskList({ tasks }: { tasks: { id: number, title: string }[]} ) {
-    return (
+type Task = {
+  id: number;
+  title: string;
+  description?: string;
+  creator?: any;
+  assignees?: any[];
+  group?: any;
+  due_date?: any;
+  is_done?: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+};
+type TaskListProps = {
+  tasks: Task[];
+  textColors?: {
+    light: string;
+    dark: string;
+  };
+};
+export default function TaskList({ tasks, textColors }: TaskListProps) {
+  return (
+
 
     <FlatList
       data={tasks}
-      renderItem={({ item }) => (
-        <View style={{flexDirection: 'row', justifyContent: 'space-between', borderWidth: 1, borderColor: 'lightgrey', borderRadius: 10, padding: 15 }}>
-            <Text>{item.title}</Text>
-            <TouchableOpacity style={{ height: 20, width: 20, borderRadius: 100, borderWidth: 2, borderColor: 'blue'}}>
-                
+      renderItem={({ item }) => {
+        const done = !!item.is_done;
+        return (
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: 'lightgrey', borderRadius: 10, padding: 15 }}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+              <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ fontWeight: '600', marginBottom: 4 }}>{item.title}</ThemedText>
+              {item.assignees ? (
+                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Assignee: {item.assignees}</ThemedText>
+              ) : null}
+              {item.group ? (
+                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Group: {item.group}</ThemedText>
+              ) : null}
+              {item.due_date ? (
+                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Due: {new Date(item.due_date).toLocaleDateString()}</ThemedText>
+              ) : null}
+            </View>
+            <TouchableOpacity
+              style={{ height: 24, width: 24, borderRadius: 100, borderWidth: 2, borderColor: done ? 'green' : 'blue', alignItems: 'center', justifyContent: 'center' }}
+              onPress={() => { }}
+              accessibilityLabel={done ? 'Task completed' : 'Mark task complete'}
+            >
+              {done ? (
+                <ThemedText style={{ color: 'green', fontSize: 14 }}>✓</ThemedText>
+              ) : null}
             </TouchableOpacity>
-        </View>
-      )}
+          </View>
+        );
+      }}
       contentContainerStyle={{ padding: 16 }}
       ItemSeparatorComponent={() => <View style={{ height: 10 }} />} // space between items
-      keyExtractor={ (item, index) => index.toString()}
+      keyExtractor={(item) => item.id.toString()}
       ListEmptyComponent={
-        <ThemedText>No groups created yet!</ThemedText>
+        <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark}>No tasks yet!</ThemedText>
+
+
       }
-      />
-)};
+    />
+  )
+};
