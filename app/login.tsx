@@ -2,6 +2,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { auth } from "@/database/firebase";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { createUserDocument } from "@/services/database";
 import { router } from "expo-router";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
@@ -12,6 +13,7 @@ type AuthMode = "login" | "signup";
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [username, setUsername] = useState("");
   const [mode, setMode] = useState<AuthMode>("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,6 +36,11 @@ export default function LoginScreen() {
 
   const handlePasswordChange = (text: string) => {
     setPassword(text);
+    resetMessages();
+  };
+
+  const handleUsernameChange = (text: string) => {
+    setUsername(text);
     resetMessages();
   };
 
@@ -82,9 +89,15 @@ export default function LoginScreen() {
       return;
     }
 
-    if (mode === "signup" && password.length < 6) {
-      setError("Password must be at least 6 characters long.");
-      return;
+    if (mode === "signup") {
+      if (!username.trim()) {
+        setError("Please enter a username.");
+        return;
+      }
+      if (password.length < 6) {
+        setError("Password must be at least 6 characters long.");
+        return;
+      }
     }
 
     // Email validation
@@ -113,12 +126,21 @@ export default function LoginScreen() {
           router.replace("/(tabs)/dashboard");
         }, 1000);
       } else {
-        await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
+        const user = userCredential.user;
+        
+        // Create Firestore user document
+        await createUserDocument(user.uid, {
+          email: email.trim(),
+          username: username.trim()
+        });
+        
         setSuccess("Account created successfully! You can now log in.");
         // Optionally switch to login mode after successful signup
         setTimeout(() => {
           setMode("login");
           setPassword("");
+          setUsername("");
           setSuccess(null);
         }, 2000);
       }
@@ -226,6 +248,30 @@ export default function LoginScreen() {
               editable={!loading}
             />
           </View>
+
+          {/* Username Input - only show for signup */}
+          {mode === "signup" && (
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.label}>Username</ThemedText>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: backgroundColor === "#fff" ? "#f9f9f9" : "#1a1a1a",
+                    color: textColor,
+                    borderColor: error ? "#ff3b30" : backgroundColor === "#fff" ? "#ddd" : "#444",
+                  },
+                ]}
+                placeholder="Enter your username"
+                placeholderTextColor={backgroundColor === "#fff" ? "#999" : "#666"}
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={username}
+                onChangeText={handleUsernameChange}
+                editable={!loading}
+              />
+            </View>
+          )}
 
           {/* Password Input */}
           <View style={styles.inputContainer}>
