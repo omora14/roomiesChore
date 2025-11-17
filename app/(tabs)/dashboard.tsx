@@ -9,18 +9,18 @@ import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Interface for task data returned from database
-interface Task {
+type Task = {
   id: string;
-  title: string;
-  description: string;
-  creator: any;
-  assignees: any[];
-  group: any;
-  due_date: any;
-  is_done: boolean;
-  createdAt: any;
-  updatedAt: any;
-}
+  // title: string;
+  description?: string;
+  creator?: any;
+  assignees?: any[];
+  group?: any;
+  due_date?: any;
+  is_done?: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+};
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -29,7 +29,7 @@ export default function DashboardScreen() {
   const [userId, setUserId] = useState<string>('');
   const [userFirstName, setUserFirstName] = useState<string>('');
   const [groups, setGroups] = useState<{ name: string, color: string, id: string}[]>([]);
-  const [tasks, setTasks] = useState<{ id: number; title: string }[]>([]); 
+  const [tasks, setTasks] = useState<Task[]>([]); 
   const [loading, setLoading] = useState(true);
 
   // Load dashboard data when component mounts
@@ -60,11 +60,13 @@ export default function DashboardScreen() {
         setGroups(groupsData || []);
         
         // Convert tasks for TaskList component (expects numeric IDs)
-        const mappedTasks = (tasksData || []).map((task, index) => ({
-          id: index + 1, // Convert string ID to number for component compatibility
-          title: task.title
-        }));
-        setTasks(mappedTasks);
+        // const mappedTasks = (tasksData || []).map((task, index) => ({
+        //   id: index + 1, // Convert string ID to number for component compatibility
+        //   title: task.title
+        // }));
+        // setTasks(mappedTasks);
+
+        setTasks(tasksData || []);
         
       } catch (error) {
         console.error('Error loading dashboard:', error);

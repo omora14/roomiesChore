@@ -157,7 +157,14 @@ export const getUpcomingTasksScalable = async (userId: string) => {
         if (!data.is_done) {
           return {
             id: taskDoc.id,
-            title: data.description || 'Untitled Task',
+            description: data.description || 'Untitled Task',
+            creator: data.creator,
+            assignees: data.assignees,
+            group: data.group,
+            due_date: data.due_date,
+            is_done: data.is_done,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
           };
         }
       }
