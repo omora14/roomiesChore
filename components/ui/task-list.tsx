@@ -3,8 +3,8 @@ import React from 'react';
 import { FlatList, TouchableOpacity, View } from 'react-native';
 
 type Task = {
-  id: number;
-  title: string;
+  id: string;
+  // title: string;
   description?: string;
   creator?: any;
   assignees?: any[];
@@ -32,12 +32,12 @@ export default function TaskList({ tasks, textColors }: TaskListProps) {
         return (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: 'lightgrey', borderRadius: 10, padding: 15 }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
-              <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ fontWeight: '600', marginBottom: 4 }}>{item.title}</ThemedText>
+              <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ fontWeight: '600', marginBottom: 4 }}>{item.description}</ThemedText>
               {item.assignees ? (
-                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Assignee: {item.assignees}</ThemedText>
+                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Assignees: {item.assignees.map(a => a.id || String(a)).join(', ')}</ThemedText>
               ) : null}
               {item.group ? (
-                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Group: {item.group}</ThemedText>
+                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Group: {item.group.group_name}</ThemedText>
               ) : null}
               {item.due_date ? (
                 <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Due: {new Date(item.due_date).toLocaleDateString()}</ThemedText>
