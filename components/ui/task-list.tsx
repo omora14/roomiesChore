@@ -21,7 +21,8 @@ type TaskListProps = {
     dark: string;
   };
 };
-export default function TaskList({ tasks, textColors }: TaskListProps) {
+
+export default function TaskList({ tasks, textColors }:TaskListProps) {
   return (
 
 
