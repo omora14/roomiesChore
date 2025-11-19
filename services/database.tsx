@@ -42,7 +42,7 @@ export const getUserData = async (userId: string) => {
   try {
     const userDocRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userDocRef);
-    
+
     return userDoc.data() as UserData | undefined;
   } catch (error) {
     console.error('Error fetching user:', error);
@@ -59,29 +59,29 @@ export const getUserData = async (userId: string) => {
 export const getUserGroupsScalable = async (userId: string) => {
   try {
     console.log('Fetching groups scalably for user:', userId);
-    
+
     // Get user document
     const userDocRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userDocRef);
     const userData = userDoc.data() as UserData | undefined;
-    
+
     console.log('User data for groups:', userData);
-    
+
     const assignedGroupRef = userData?.assigned_groups;
-    
+
     // Check if user has any assigned groups
     if (!assignedGroupRef) {
       console.log('No assigned groups found');
       return [];
     }
-    
+
     // Handle case where assigned_groups is an array
     if (Array.isArray(assignedGroupRef)) {
       const groupPromises = assignedGroupRef.map(async (groupRef: DocumentReference | string) => {
         const groupDoc = typeof groupRef === 'string'
           ? await getDoc(doc(db, 'groups', groupRef))
           : await getDoc(groupRef);
-        
+
         if (groupDoc.exists()) {
           const data = groupDoc.data() as GroupData;
           return {
@@ -92,16 +92,16 @@ export const getUserGroupsScalable = async (userId: string) => {
         }
         return null;
       });
-      
+
       const groups = (await Promise.all(groupPromises)).filter(group => group !== null);
       return groups;
     }
-    
+
     // Handle case where assigned_groups is a single reference
     const groupDoc = typeof assignedGroupRef === 'string'
       ? await getDoc(doc(db, 'groups', assignedGroupRef))
       : await getDoc(assignedGroupRef);
-    
+
     if (groupDoc.exists()) {
       const data = groupDoc.data() as GroupData;
       return [{
@@ -110,9 +110,9 @@ export const getUserGroupsScalable = async (userId: string) => {
         color: data.color,
       }];
     }
-    
+
     return [];
-    
+
   } catch (error) {
     console.error('Error fetching groups scalably:', error);
     return [];
@@ -128,31 +128,31 @@ export const getUserGroupsScalable = async (userId: string) => {
 export const getUpcomingTasksScalable = async (userId: string) => {
   try {
     console.log('Fetching tasks scalably for user:', userId);
-    
+
     // Get user document
     const userDocRef = doc(db, 'users', userId);
     const userDoc = await getDoc(userDocRef);
     const userData = userDoc.data() as UserData | undefined;
-    
+
     console.log('User data for tasks:', userData);
-    
+
     const assignedTaskRefs = userData?.assigned_tasks;
-    
+
     // Check if user has any assigned tasks
     if (!assignedTaskRefs || !Array.isArray(assignedTaskRefs) || assignedTaskRefs.length === 0) {
       console.log('No assigned tasks found or assigned_tasks is not an array');
       return [];
     }
-    
+
     // Fetch each task document
     const taskPromises = assignedTaskRefs.map(async (taskRef: DocumentReference | string) => {
       const taskDoc = typeof taskRef === 'string'
         ? await getDoc(doc(db, 'tasks', taskRef))
         : await getDoc(taskRef);
-      
+
       if (taskDoc.exists()) {
         const data = taskDoc.data() as TaskData;
-        
+
         // Only return incomplete tasks
         if (!data.is_done) {
           return {
@@ -161,22 +161,22 @@ export const getUpcomingTasksScalable = async (userId: string) => {
             creator: data.creator,
             assignees: data.assignees,
             group: data.group,
-            due_date: data.due_date,
+            due_date: data.due_date?.toDate(), // Convert Timestamp to Date
             is_done: data.is_done,
-            createdAt: data.createdAt,
-            updatedAt: data.updatedAt,
+            createdAt: data.createdAt?.toDate(), // Convert Timestamp to Date
+            updatedAt: data.updatedAt?.toDate(), // Convert Timestamp to Date
           };
         }
       }
       return null;
     });
-    
+
     // Filter out null values and sort
     const tasks = (await Promise.all(taskPromises)).filter(task => task !== null);
     console.log('Scalable tasks:', tasks);
-    
+
     return tasks;
-    
+
   } catch (error) {
     console.error('Error fetching tasks scalably:', error);
     return [];
@@ -191,7 +191,7 @@ export const getUpcomingTasksScalable = async (userId: string) => {
 export const createUserDocument = async (userId: string, userData: { email: string, username: string }) => {
   try {
     const userDocRef = doc(db, 'users', userId);
-    
+
     await setDoc(userDocRef, {
       email: userData.email,
       username: userData.username,
@@ -200,7 +200,7 @@ export const createUserDocument = async (userId: string, userData: { email: stri
       assigned_tasks: [],     // Tasks assigned to this user  
       assigned_groups: [],    // Groups this user belongs to
     });
-    
+
     console.log('User document created successfully');
   } catch (error) {
     console.error('Error creating user document:', error);
