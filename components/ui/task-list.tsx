@@ -37,7 +37,7 @@ export default function TaskList({ tasks, textColors }: TaskListProps) {
                 <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Assignees: {item.assignees.map(a => a.id || String(a)).join(', ')}</ThemedText>
               ) : null}
               {item.group ? (
-                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Group: {item.group.group_name}</ThemedText>
+                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Group: {item.group.id}</ThemedText>
               ) : null}
               {item.due_date ? (
                 <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Due: {new Date(item.due_date).toLocaleDateString()}</ThemedText>

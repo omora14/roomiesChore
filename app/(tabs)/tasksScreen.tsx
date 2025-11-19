@@ -9,7 +9,7 @@ export default function TasksScreen() {
     const tasks = useMemo(() => (
         [
             {
-                id: 1,
+                id: '1',
                 title: 'Take out the trash',
                 creator: 'Alice',
                 assignee: 'Bob',
@@ -19,7 +19,7 @@ export default function TasksScreen() {
                 is_done: false,
             },
             {
-                id: 2,
+                id: '2',
                 title: 'Clean the bathroom',
                 creator: 'Charlie',
                 assignee: 'Dana',
@@ -29,7 +29,7 @@ export default function TasksScreen() {
                 is_done: true,
             },
             {
-                id: 3,
+                id: '3',
                 title: 'Vacuum living room',
                 creator: 'Eve',
                 assignee: 'Frank',
