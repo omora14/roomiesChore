@@ -51,7 +51,20 @@ export default function GroupScreen() {
       const userDocRef = doc(db, "users", userId);
       const individualTaskQuery = query(tasksReference, where('assignees', 'array-contains', userDocRef));
       const unsubscribe = onSnapshot(individualTaskQuery, (snapshot) => {
-        const individualTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<Task, 'id'>}));
+        const individualTasks = snapshot.docs.map(doc => {
+          const data = doc.data() as Omit<Task, 'id'>;
+          return { 
+            id: doc.id,
+            description: data.description,
+            creator: data.creator,
+            assignees: data.assignees,
+            group: data.group,
+            is_done: data.is_done,
+            createdAt: data.createdAt?.toDate(),
+            updatedAt: data.updatedAt?.toDate(),
+            due_date: data.due_date?.toDate(), 
+          };
+        });
         setIndividualTasks(individualTasks);
 
     });
@@ -69,45 +82,27 @@ export default function GroupScreen() {
       const groupDocRef = doc(db, "group", groupId as string);
       const groupTaskQuery = query(tasksReference, where('group', '==', groupDocRef));
       const unsubscribe = onSnapshot(groupTaskQuery, (snapshot) => {
-        const groupTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() as Omit<Task, 'id'>}));
+        const groupTasks = snapshot.docs.map(doc => {
+        const data = doc.data() as Omit<Task, 'id'>;
+          return { 
+            id: doc.id,
+            description: data.description,
+            creator: data.creator,
+            assignees: data.assignees,
+            group: data.group,
+            is_done: data.is_done,
+            createdAt: data.createdAt?.toDate(),
+            updatedAt: data.updatedAt?.toDate(),
+            due_date: data.due_date?.toDate(), 
+          };
+        });
         setGroupTasks(groupTasks);
-
     });
 
     return () => unsubscribe();
   }, [groupId])
 
 );
-
-  // const groupTasks: { id: number, title: string }[] = [
-  //   {id: 1,
-  //     title: 'Clean kitchen'
-  //   },
-  //   {id: 2,
-  //     title: 'Vacuum living room'
-  //   },
-  //   {id: 3,
-  //     title: 'Clean out fridge'
-  //   },
-  //   {id: 4,
-  //     title: 'Do dishes'
-  //   },
-  //   {id: 5,
-  //     title: 'Take out kitchen trash'
-  //   },
-  // ];
-  // Change to retrieve individual tasks from database
-  // const individualTasks: { id: number, title: string }[] = [
-  //   {id: 3,
-  //     title: 'Vacuum living room'
-  //   },
-  //   {id: 4,
-  //     title: 'Do dishes'
-  //   },
-  //   {id: 5,
-  //     title: 'Take out kitchen trash'
-  //   },
-  // ];
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: 'white', padding: 10,}}>
 
