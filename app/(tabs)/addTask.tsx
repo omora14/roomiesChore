@@ -1,3 +1,4 @@
+import { useRouter } from "expo-router"; // Added for navigation
 import React, { useState } from "react";
 import {
   Alert,
@@ -11,18 +12,34 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AddTaskScreen() {
+  const router = useRouter(); // Navigation hook
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assigneeId, setAssignee] = useState("");
-  const [groupId, setGroup] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("");
+  
+  const groupOptions = [
+    { id: "group1", name: "Apartment 67" },
+    { id: "group2", name: "Apartement 20" },
+    { id: "group3", name: "Apartment 45" },
+  ];
 
-  // Automatically format YYYY-MM-DD
+  const [groupId, setGroupId] = useState("");
+  const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
+
+  // Validation states
+  const [errors, setErrors] = useState({
+    title: "",
+    assigneeId: "",
+    groupId: "",
+  });
+
+  // Auto-format YYYY-MM-DD
   const formatDate = (text: string) => {
-    // Remove everything except digits
     const cleaned = text.replace(/\D/g, "");
-
     let formatted = cleaned;
 
     if (cleaned.length > 4 && cleaned.length <= 6) {
@@ -39,11 +56,27 @@ export default function AddTaskScreen() {
     return formatted;
   };
 
+  // Handle Add Task
   const handleAddTask = () => {
-    if (!title.trim() || !assigneeId.trim() || !groupId.trim()) {
-      Alert.alert("Missing Info", "Please fill out all required fields.");
-      return;
+    let newErrors = { title: "", assigneeId: "", groupId: "" };
+    let hasError = false;
+
+    if (!title.trim()) {
+      newErrors.title = "Title is required.";
+      hasError = true;
     }
+    if (!assigneeId.trim()) {
+      newErrors.assigneeId = "Assignee is required.";
+      hasError = true;
+    }
+    if (!groupId.trim()) {
+      newErrors.groupId = "You must select a group.";
+      hasError = true;
+    }
+
+    setErrors(newErrors);
+
+    if (hasError) return;
 
     console.log("New Task:", {
       title,
@@ -54,12 +87,16 @@ export default function AddTaskScreen() {
       priority,
     });
 
-    Alert.alert("Task Created", "Your new task has been added successfully!");
+    Alert.alert("Success", "Task created successfully!");
+
+    // Navigate back to Tasks tab
+    setTimeout(() => {
+      router.replace("/(tabs)/tasksScreen");
+    }, 500);
   };
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
-      {/* Top Header */}
       <View style={styles.headerContainer}>
         <Text style={styles.headerTitle}>Create Task</Text>
       </View>
@@ -68,7 +105,7 @@ export default function AddTaskScreen() {
         <Text style={styles.sectionTitle}>Task Details</Text>
 
         <View style={styles.card}>
-          {/* Title */}
+          {/* TITLE */}
           <Text style={styles.label}>Task Title *</Text>
           <TextInput
             style={styles.input}
@@ -76,36 +113,67 @@ export default function AddTaskScreen() {
             value={title}
             onChangeText={setTitle}
           />
+          {errors.title ? (
+            <Text style={styles.errorText}>{errors.title}</Text>
+          ) : null}
 
-          {/* Description */}
+          {/* DESCRIPTION */}
           <Text style={styles.label}>Description</Text>
           <TextInput
             style={[styles.input, styles.textArea]}
-            placeholder="Add more details about the task..."
+            placeholder="Add more details..."
             value={description}
             onChangeText={setDescription}
             multiline
           />
 
-          {/* Assignee */}
+          {/* ASSIGNEE */}
           <Text style={styles.label}>Assignee *</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. user123"
+            placeholder="e.g. Bob"
             value={assigneeId}
             onChangeText={setAssignee}
           />
+          {errors.assigneeId ? (
+            <Text style={styles.errorText}>{errors.assigneeId}</Text>
+          ) : null}
 
-          {/* Group */}
+          {/* GROUP DROPDOWN */}
           <Text style={styles.label}>Group *</Text>
-          <TextInput
+          <TouchableOpacity
             style={styles.input}
-            placeholder="e.g. groupA12"
-            value={groupId}
-            onChangeText={setGroup}
-          />
+            onPress={() => setShowGroupDropdown(!showGroupDropdown)}
+          >
+            <Text>
+              {groupId
+                ? groupOptions.find((g) => g.id === groupId)?.name
+                : "Select a group"}
+            </Text>
+          </TouchableOpacity>
 
-          {/* Due Date */}
+          {errors.groupId ? (
+            <Text style={styles.errorText}>{errors.groupId}</Text>
+          ) : null}
+
+          {showGroupDropdown && (
+            <View style={styles.dropdown}>
+              {groupOptions.map((g) => (
+                <TouchableOpacity
+                  key={g.id}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setGroupId(g.id);
+                    setShowGroupDropdown(false);
+                  }}
+                >
+                  <Text>{g.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* DUE DATE */}
           <Text style={styles.label}>Due Date</Text>
           <TextInput
             style={styles.input}
@@ -116,18 +184,39 @@ export default function AddTaskScreen() {
             keyboardType="numeric"
           />
 
-          {/* Priority */}
+          {/* PRIORITY DROPDOWN */}
           <Text style={styles.label}>Priority</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Low / Medium / High"
-            value={priority}
-            onChangeText={setPriority}
-          />
-        </View>
 
-        {/* Add Task Button */}
-        <TouchableOpacity style={styles.button} onPress={handleAddTask}>
+          <TouchableOpacity
+            style={styles.input}
+            onPress={() => setShowPriorityDropdown(!showPriorityDropdown)}
+          >
+            <Text>{priority ? priority : "Select Priority"}</Text>
+          </TouchableOpacity>
+
+          {showPriorityDropdown && (
+            <View style={styles.dropdown}>
+              {["Low", "Medium", "High"].map((level) => (
+                <TouchableOpacity
+                  key={level}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setPriority(level);
+                    setShowPriorityDropdown(false);
+                  }}
+                >
+                  <Text>{level}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            )}
+            </View>
+            
+        {/* BUTTON */}
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: "#0A7EA4" }]}
+          onPress={handleAddTask}
+        >
           <Text style={styles.buttonText}>Add Task</Text>
         </TouchableOpacity>
       </ScrollView>
@@ -135,6 +224,7 @@ export default function AddTaskScreen() {
   );
 }
 
+/* STYLES */
 const styles = StyleSheet.create({
   headerContainer: {
     paddingVertical: 15,
@@ -180,8 +270,25 @@ const styles = StyleSheet.create({
     height: 90,
     textAlignVertical: "top",
   },
+  dropdown: {
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    backgroundColor: "white",
+    marginTop: 4,
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  errorText: {
+    color: "red",
+    fontSize: 13,
+    marginTop: 4,
+  },
   button: {
-    backgroundColor: "#5E60CE",
+    backgroundColor: "#0A7EA4",
     padding: 16,
     borderRadius: 10,
     alignItems: "center",
