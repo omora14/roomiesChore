@@ -1,4 +1,6 @@
 import { ThemedText } from '@/components/themed-text';
+import { db } from '@/database/firebase';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import React from 'react';
 import { FlatList, TouchableOpacity, View } from 'react-native';
 
@@ -23,6 +25,21 @@ type TaskListProps = {
 };
 
 export default function TaskList({ tasks, textColors }:TaskListProps) {
+  
+  async function toggleCompletion(task: Task) {
+    const docRef = doc(db, 'tasks', task.id);
+    const document = await getDoc(docRef);
+    const data = document.data();
+
+    // Make sure there is data before trying to change it.
+    if (!data) return;
+
+    // Change is_done to whatever it isn't currently
+    await updateDoc(docRef, { is_done: !data.is_done })
+
+    }
+
+
   return (
 
 
@@ -46,7 +63,7 @@ export default function TaskList({ tasks, textColors }:TaskListProps) {
             </View>
             <TouchableOpacity
               style={{ height: 24, width: 24, borderRadius: 100, borderWidth: 2, borderColor: done ? 'green' : 'blue', alignItems: 'center', justifyContent: 'center' }}
-              onPress={() => { }}
+              onPress={() => { toggleCompletion(item) }}
               accessibilityLabel={done ? 'Task completed' : 'Mark task complete'}
             >
               {done ? (

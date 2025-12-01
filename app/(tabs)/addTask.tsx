@@ -214,7 +214,7 @@ export default function AddTaskScreen() {
             
         {/* BUTTON */}
         <TouchableOpacity
-          style={[styles.button, { backgroundColor: "#0A7EA4" }]}
+          style={[styles.button, { backgroundColor: "blue" }]}
           onPress={handleAddTask}
         >
           <Text style={styles.buttonText}>Add Task</Text>
