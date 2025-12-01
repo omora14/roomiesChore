@@ -14,6 +14,8 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [mode, setMode] = useState<AuthMode>("login");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +43,16 @@ export default function LoginScreen() {
 
   const handleUsernameChange = (text: string) => {
     setUsername(text);
+    resetMessages();
+  };
+
+  const handleFirstNameChange = (text: string) => {
+    setFirstName(text);
+    resetMessages();
+  };
+
+  const handleLastNameChange = (text: string) => {
+    setLastName(text);
     resetMessages();
   };
 
@@ -94,6 +106,14 @@ export default function LoginScreen() {
         setError("Please enter a username.");
         return;
       }
+      if (!firstName.trim()) {
+        setError("Please enter your first name.");
+        return;
+      }
+      if (!lastName.trim()) {
+        setError("Please enter your last name.");
+        return;
+      }
       if (password.length < 6) {
         setError("Password must be at least 6 characters long.");
         return;
@@ -132,7 +152,9 @@ export default function LoginScreen() {
         // Create Firestore user document
         await createUserDocument(user.uid, {
           email: email.trim(),
-          username: username.trim()
+          username: username.trim(),
+          firstName: firstName.trim(),
+          lastName: lastName.trim()
         });
         
         setSuccess("Account created successfully! You can now log in.");
@@ -141,6 +163,8 @@ export default function LoginScreen() {
           setMode("login");
           setPassword("");
           setUsername("");
+          setFirstName("");
+          setLastName("");
           setSuccess(null);
         }, 2000);
       }
@@ -268,6 +292,54 @@ export default function LoginScreen() {
                 autoCorrect={false}
                 value={username}
                 onChangeText={handleUsernameChange}
+                editable={!loading}
+              />
+            </View>
+          )}
+
+          {/* First Name Input - only show for signup */}
+          {mode === "signup" && (
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.label}>First Name</ThemedText>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: backgroundColor === "#fff" ? "#f9f9f9" : "#1a1a1a",
+                    color: textColor,
+                    borderColor: error ? "#ff3b30" : backgroundColor === "#fff" ? "#ddd" : "#444",
+                  },
+                ]}
+                placeholder="Enter your first name"
+                placeholderTextColor={backgroundColor === "#fff" ? "#999" : "#666"}
+                autoCapitalize="words"
+                autoCorrect={false}
+                value={firstName}
+                onChangeText={handleFirstNameChange}
+                editable={!loading}
+              />
+            </View>
+          )}
+
+          {/* Last Name Input - only show for signup */}
+          {mode === "signup" && (
+            <View style={styles.inputContainer}>
+              <ThemedText style={styles.label}>Last Name</ThemedText>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: backgroundColor === "#fff" ? "#f9f9f9" : "#1a1a1a",
+                    color: textColor,
+                    borderColor: error ? "#ff3b30" : backgroundColor === "#fff" ? "#ddd" : "#444",
+                  },
+                ]}
+                placeholder="Enter your last name"
+                placeholderTextColor={backgroundColor === "#fff" ? "#999" : "#666"}
+                autoCapitalize="words"
+                autoCorrect={false}
+                value={lastName}
+                onChangeText={handleLastNameChange}
                 editable={!loading}
               />
             </View>
