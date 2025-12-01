@@ -3,7 +3,7 @@ import { auth, db } from '@/database/firebase';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { collection, doc, onSnapshot, query, where } from 'firebase/firestore';
 import { useCallback, useState } from 'react';
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Interface for task data returned from database
@@ -105,7 +105,7 @@ export default function GroupScreen() {
 );
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: 'white', padding: 10,}}>
-
+      <ScrollView>
     <Text style={{ marginTop: 20 }}>{dateString}</Text>
 
     <Text style={{fontWeight: 'bold', fontSize: 25, marginTop: 30}}>
@@ -124,6 +124,7 @@ export default function GroupScreen() {
       Group Tasks
     </Text>
       <TaskList tasks={groupTasks}/>
+      </ScrollView>
   </SafeAreaView>
 );
 }

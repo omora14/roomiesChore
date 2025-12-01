@@ -5,7 +5,7 @@ import { getCurrentUserId } from '@/services/auth';
 import { getUpcomingTasksScalable, getUserData, getUserGroupsScalable } from '@/services/database';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Interface for task data returned from database
@@ -104,7 +104,7 @@ export default function DashboardScreen() {
   // Main dashboard render
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: 'white', padding: 10}}>
-      
+      <ScrollView>
       {/* Header section with date and welcome message */}
       <Text style={{ marginTop: 20 }}>
         {dateString}
@@ -147,7 +147,7 @@ export default function DashboardScreen() {
       </Text>
       
       <TaskList tasks={tasks} />
-      
+      </ScrollView>
     </SafeAreaView>
   );
 }
