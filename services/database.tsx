@@ -7,6 +7,8 @@ import { doc, DocumentReference, getDoc, serverTimestamp, setDoc, Timestamp } fr
 interface UserData {
   username: string;
   email: string;
+  firstName: string;
+  lastName: string;
   createdAt: Timestamp;
   created_tasks: (DocumentReference | string)[];
   assigned_tasks: (DocumentReference | string)[];
@@ -186,15 +188,17 @@ export const getUpcomingTasksScalable = async (userId: string) => {
 /**
  * Creates a new user document in Firestore with the updated schema
  * @param userId - The unique user ID from Firebase Auth
- * @param userData - Object containing email and username
+ * @param userData - Object containing email, username, firstName, and lastName
  */
-export const createUserDocument = async (userId: string, userData: { email: string, username: string }) => {
+export const createUserDocument = async (userId: string, userData: { email: string, username: string, firstName: string, lastName: string }) => {
   try {
     const userDocRef = doc(db, 'users', userId);
 
     await setDoc(userDocRef, {
       email: userData.email,
       username: userData.username,
+      firstName: userData.firstName,
+      lastName: userData.lastName,
       createdAt: serverTimestamp(),
       created_tasks: [],      // Tasks created by this user
       assigned_tasks: [],     // Tasks assigned to this user  
