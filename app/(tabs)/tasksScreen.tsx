@@ -2,6 +2,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import TaskList from '@/components/ui/task-list';
 import { db } from '@/database/firebase';
+import { useRouter } from 'expo-router';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
@@ -22,6 +23,7 @@ type Task = {
 
 
 export default function TasksScreen() {
+    const router = useRouter();
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -76,7 +78,7 @@ export default function TasksScreen() {
                         <ThemedText>Create Group</ThemedText>
                     </TouchableOpacity>
                     <TouchableOpacity
-                        onPress={() => console.log('Create Task Pressed')}
+                        onPress={() => router.push('/(tabs)/addTask')}
                         style={{ flex: 1, backgroundColor: '#e5e7eb', paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }}
                     >
                         <ThemedText>Create Task</ThemedText>

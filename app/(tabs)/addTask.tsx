@@ -1,5 +1,7 @@
-import { useRouter } from "expo-router"; // Added for navigation
-import React, { useState } from "react";
+import { getCurrentUserId } from "@/services/auth";
+import { createTask, getGroupMembers, getUserGroupsScalable } from "@/services/database";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -11,6 +13,17 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// Interface for creating a new task
+interface CreateTaskData {
+  description: string;        // Task title/description
+  creator: string;           // User ID of creator
+  assignees: string[];       // Array of user IDs assigned to task
+  group: string;             // Group ID where task belongs
+  due_date: string;          // Date in YYYY-MM-DD format (will convert to Timestamp)
+  is_done: boolean;          // Completion status (always false for new tasks)
+  priority?: string;         // Optional: Low, Medium, High
+}
+
 export default function AddTaskScreen() {
   const router = useRouter(); // Navigation hook
 
@@ -20,14 +33,14 @@ export default function AddTaskScreen() {
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("");
   
-  const groupOptions = [
-    { id: "group1", name: "Apartment 67" },
-    { id: "group2", name: "Apartement 20" },
-    { id: "group3", name: "Apartment 45" },
-  ];
+  // Dynamic state for groups and assignees
+  const [groupOptions, setGroupOptions] = useState<{ id: string; name: string; color?: string }[]>([]);
+  const [assigneOptions, setAssigneOptions] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [groupId, setGroupId] = useState("");
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
 
   // Validation states
@@ -36,6 +49,43 @@ export default function AddTaskScreen() {
     assigneeId: "",
     groupId: "",
   });
+
+  // Load user's groups on component mount
+  useEffect(() => {
+    const loadUserGroups = async () => {
+      try {
+        setLoading(true);
+        const currentUserId = await getCurrentUserId();
+        const userGroups = await getUserGroupsScalable(currentUserId);
+        setGroupOptions(userGroups);
+      } catch (error) {
+        console.error('Error loading groups:', error);
+        Alert.alert('Error', 'Failed to load groups');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserGroups();
+  }, []);
+
+  // Handle group selection and load members
+  const handleGroupSelection = async (selectedGroupId: string) => {
+    setGroupId(selectedGroupId);
+    setShowGroupDropdown(false);
+    
+    try {
+      // Fetch members of the selected group
+      const members = await getGroupMembers(selectedGroupId);
+      setAssigneOptions(members);
+      
+      // Reset assignee since group changed
+      setAssignee("");
+    } catch (error) {
+      console.error('Error loading group members:', error);
+      Alert.alert('Error', 'Failed to load group members');
+    }
+  };
 
   // Auto-format YYYY-MM-DD
   const formatDate = (text: string) => {
@@ -57,7 +107,7 @@ export default function AddTaskScreen() {
   };
 
   // Handle Add Task
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     let newErrors = { title: "", assigneeId: "", groupId: "" };
     let hasError = false;
 
@@ -78,21 +128,33 @@ export default function AddTaskScreen() {
 
     if (hasError) return;
 
-    console.log("New Task:", {
-      title,
-      description,
-      assigneeId,
-      groupId,
-      dueDate,
-      priority,
-    });
+    try {
+      // Get current user as creator
+      const currentUserId = await getCurrentUserId();
+      
+      // Create task in Firestore
+      const taskId = await createTask({
+        description: title,
+        creator: currentUserId,
+        assignees: [assigneeId],
+        group: groupId,
+        due_date: dueDate,
+        priority: priority,
+      });
 
-    Alert.alert("Success", "Task created successfully!");
+      console.log("Task created successfully with ID:", taskId);
+      
+      Alert.alert("Success", "Task created successfully!");
 
-    // Navigate back to Tasks tab
-    setTimeout(() => {
-      router.replace("/(tabs)/tasksScreen");
-    }, 500);
+      // Navigate back to Tasks tab
+      setTimeout(() => {
+        router.replace("/(tabs)/tasksScreen");
+      }, 500);
+      
+    } catch (error) {
+      console.error("Error creating task:", error);
+      Alert.alert("Error", "Failed to create task. Please try again.");
+    }
   };
 
   return (
@@ -127,26 +189,17 @@ export default function AddTaskScreen() {
             multiline
           />
 
-          {/* ASSIGNEE */}
-          <Text style={styles.label}>Assignee *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Bob"
-            value={assigneeId}
-            onChangeText={setAssignee}
-          />
-          {errors.assigneeId ? (
-            <Text style={styles.errorText}>{errors.assigneeId}</Text>
-          ) : null}
-
           {/* GROUP DROPDOWN */}
           <Text style={styles.label}>Group *</Text>
           <TouchableOpacity
             style={styles.input}
             onPress={() => setShowGroupDropdown(!showGroupDropdown)}
+            disabled={loading}
           >
             <Text>
-              {groupId
+              {loading 
+                ? "Loading groups..."
+                : groupId
                 ? groupOptions.find((g) => g.id === groupId)?.name
                 : "Select a group"}
             </Text>
@@ -162,12 +215,48 @@ export default function AddTaskScreen() {
                 <TouchableOpacity
                   key={g.id}
                   style={styles.dropdownItem}
-                  onPress={() => {
-                    setGroupId(g.id);
-                    setShowGroupDropdown(false);
-                  }}
+                  onPress={() => handleGroupSelection(g.id)}
                 >
                   <Text>{g.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* ASSIGNEE DROPDOWN */}
+          <Text style={styles.label}>Assignee *</Text>
+          <TouchableOpacity
+            style={styles.input}
+            onPress={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
+            disabled={!groupId || assigneOptions.length === 0}
+          >
+            <Text>
+              {!groupId
+                ? "Select a group first"
+                : assigneeId
+                ? assigneOptions.find((a) => a.id === assigneeId)?.name
+                : assigneOptions.length === 0
+                ? "No members in this group"
+                : "Select an assignee"}
+            </Text>
+          </TouchableOpacity>
+
+          {errors.assigneeId ? (
+            <Text style={styles.errorText}>{errors.assigneeId}</Text>
+          ) : null}
+
+          {showAssigneeDropdown && (
+            <View style={styles.dropdown}>
+              {assigneOptions.map((a) => (
+                <TouchableOpacity
+                  key={a.id}
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setAssignee(a.id);
+                    setShowAssigneeDropdown(false);
+                  }}
+                >
+                  <Text>{a.name}</Text>
                 </TouchableOpacity>
               ))}
             </View>
