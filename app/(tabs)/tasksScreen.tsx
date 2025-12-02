@@ -5,7 +5,11 @@ import { db } from '@/database/firebase';
 import { useRouter } from 'expo-router';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import { useTheme } from '@/contexts/ThemeContext';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 
 type Task = {
@@ -24,6 +28,12 @@ type Task = {
 
 export default function TasksScreen() {
     const router = useRouter();
+    const { theme } = useTheme();
+    const backgroundColor = useThemeColor({}, "background");
+    const textColor = useThemeColor({}, "text");
+    const tintColor = useThemeColor({}, "tint");
+    const isDark = theme === "dark";
+    
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -68,42 +78,141 @@ export default function TasksScreen() {
 
 
     return (
-        <ThemedView style={{ flex: 1 }}>
-            <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
-                <View style={{ flexDirection: 'row', gap: 12, marginBottom: 12 }}>
-                    <TouchableOpacity
-                        onPress={() => console.log('Create Group Pressed')}
-                        style={{ flex: 1, backgroundColor: '#e5e7eb', paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }}
-                    >
-                        <ThemedText>Create Group</ThemedText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        onPress={() => router.push('/(tabs)/addTask')}
-                        style={{ flex: 1, backgroundColor: '#e5e7eb', paddingVertical: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }}
-                    >
-                        <ThemedText>Create Task</ThemedText>
-                    </TouchableOpacity>
-                </View>
+        <ThemedView style={styles.container}>
+            <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
+                <View style={styles.content}>
+                    {/* Action Buttons */}
+                    <View style={styles.buttonContainer}>
+                        <TouchableOpacity
+                            onPress={() => console.log('Create Group Pressed')}
+                            style={[
+                                styles.actionButton,
+                                {
+                                    backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0',
+                                    borderColor: isDark ? '#3a3a3a' : '#e0e0e0',
+                                }
+                            ]}
+                        >
+                            <MaterialIcons name="group-add" size={20} color={tintColor} />
+                            <ThemedText style={[styles.buttonText, { color: tintColor }]}>
+                                Create Group
+                            </ThemedText>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => router.push('/(tabs)/addTask')}
+                            style={[
+                                styles.actionButton,
+                                styles.primaryButton,
+                                { backgroundColor: tintColor }
+                            ]}
+                        >
+                            <MaterialIcons name="add-task" size={20} color="white" />
+                            <ThemedText style={[styles.buttonText, styles.primaryButtonText]}>
+                                Create Task
+                            </ThemedText>
+                        </TouchableOpacity>
+                    </View>
 
-            </View>
-
-
-            {loading ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ActivityIndicator size="large" color="#0000ff" />
-                    <ThemedText style={{ marginTop: 10 }}>Loading tasks...</ThemedText>
+                    {/* Content Area */}
+                    {loading ? (
+                        <View style={styles.centerContainer}>
+                            <ActivityIndicator size="large" color={tintColor} />
+                            <ThemedText style={styles.loadingText}>Loading tasks...</ThemedText>
+                        </View>
+                    ) : error ? (
+                        <View style={styles.centerContainer}>
+                            <MaterialIcons name="error-outline" size={48} color="#ff3b30" />
+                            <ThemedText style={[styles.errorText, { color: '#ff3b30' }]}>
+                                {error}
+                            </ThemedText>
+                        </View>
+                    ) : tasks.length > 0 ? (
+                        <TaskList tasks={tasks} />
+                    ) : (
+                        <View style={styles.centerContainer}>
+                            <MaterialIcons name="assignment" size={64} color={isDark ? '#666' : '#ccc'} />
+                            <ThemedText style={styles.emptyText}>
+                                No tasks found
+                            </ThemedText>
+                            <ThemedText style={styles.emptySubtext}>
+                                Create your first task to get started!
+                            </ThemedText>
+                        </View>
+                    )}
                 </View>
-            ) : error ? (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ThemedText style={{ color: 'red' }}>{error}</ThemedText>
-                </View>
-            ) : tasks.length > 0 ? (
-                <TaskList tasks={tasks} />
-            ) : (
-                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                    <ThemedText>No tasks found. Create your first task!</ThemedText>
-                </View>
-            )}
+            </SafeAreaView>
         </ThemedView>
     );
 }
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+    },
+    safeArea: {
+        flex: 1,
+    },
+    content: {
+        flex: 1,
+        padding: 20,
+    },
+    buttonContainer: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 24,
+    },
+    actionButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        gap: 8,
+    },
+    primaryButton: {
+        borderWidth: 0,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+        elevation: 3,
+    },
+    buttonText: {
+        fontSize: 15,
+        fontWeight: '600',
+    },
+    primaryButtonText: {
+        color: 'white',
+    },
+    centerContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: 16,
+        opacity: 0.7,
+    },
+    errorText: {
+        marginTop: 12,
+        fontSize: 16,
+        textAlign: 'center',
+    },
+    emptyText: {
+        marginTop: 16,
+        fontSize: 18,
+        fontWeight: '600',
+        opacity: 0.8,
+    },
+    emptySubtext: {
+        marginTop: 8,
+        fontSize: 14,
+        opacity: 0.6,
+        textAlign: 'center',
+    },
+});
