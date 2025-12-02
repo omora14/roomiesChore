@@ -6,7 +6,8 @@ import { getCurrentUserId } from '@/services/auth';
 import { getUpcomingTasksScalable, getUserData, getUserGroupsScalable } from '@/services/database';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, StyleSheet } from 'react-native';
+import { FlatList, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -128,6 +129,22 @@ export default function DashboardScreen() {
               Welcome{userFirstName ? `, ${userFirstName}${userLastName ? ` ${userLastName}` : ''}` : ''}!
             </ThemedText>
           </View>
+    <SafeAreaView style={{flex: 1, backgroundColor: 'white', padding: 10}}>
+      <ScrollView>
+      {/* Header section with date and welcome message */}
+      <Text style={{ marginTop: 20 }}>
+        {dateString}
+      </Text>
+
+      <Text style={{fontWeight: 'bold', fontSize: 25, marginTop: 30}}>
+        Welcome {userFirstName}!
+      </Text>
+
+      {/* Groups section */}
+      <View>
+        <Text style={{fontWeight: '600', fontSize: 20, marginTop: 30}}>
+          My Groups
+        </Text>
 
           {/* Groups section */}
           <View style={styles.section}>
@@ -170,6 +187,14 @@ export default function DashboardScreen() {
         </View>
       </SafeAreaView>
     </ThemedView>
+      {/* Tasks section */}
+      <Text style={{fontWeight: '600', fontSize: 20, marginTop: 30}}>
+        Upcoming Tasks
+      </Text>
+      
+      <TaskList tasks={tasks} />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 

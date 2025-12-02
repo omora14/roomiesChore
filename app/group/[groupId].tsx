@@ -6,6 +6,7 @@ import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { collection, doc, getDoc, onSnapshot, query, where } from 'firebase/firestore';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -170,6 +171,9 @@ export default function GroupScreen() {
               </View>
             )}
           </View>
+    <SafeAreaView style={{flex: 1, backgroundColor: 'white', padding: 10,}}>
+      <ScrollView>
+    <Text style={{ marginTop: 20 }}>{dateString}</Text>
 
           {/* Group Tasks Section */}
           <View style={styles.section}>
@@ -242,3 +246,18 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
+    <View>
+    <Text style={{fontWeight: '600', fontSize: 20, marginTop: 30}}>
+      Individual Tasks
+    </Text>
+    {/* Create scrollable list of tasks for entire group */}
+      <TaskList tasks={individualTasks} />
+      </View>
+    <Text style={{fontWeight: '600', fontSize: 20, marginTop: 30}}>
+      Group Tasks
+    </Text>
+      <TaskList tasks={groupTasks}/>
+      </ScrollView>
+  </SafeAreaView>
+);
+}
