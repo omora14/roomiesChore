@@ -1,8 +1,11 @@
+import Logo from "@/assets/images/media/logo.svg";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import { useTheme } from "@/contexts/ThemeContext";
 import { auth } from "@/database/firebase";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { createUserDocument } from "@/services/database";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { router } from "expo-router";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
@@ -21,10 +24,11 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  const { theme, toggleTheme } = useTheme();
   const backgroundColor = useThemeColor({}, "background");
   const textColor = useThemeColor({}, "text");
   const tintColor = useThemeColor({}, "tint");
-  const isDark = backgroundColor !== "#fff" && backgroundColor !== "#FFFFFF";
+  const isDark = theme === "dark";
 
   const resetMessages = () => {
     setError(null);
@@ -192,16 +196,34 @@ export default function LoginScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      {/* Theme Toggle Button */}
+      <TouchableOpacity
+        style={[
+          styles.themeToggle,
+          {
+            backgroundColor: isDark ? "rgba(255, 255, 255, 0.1)" : "rgba(0, 0, 0, 0.05)",
+          },
+        ]}
+        onPress={toggleTheme}
+      >
+        <MaterialIcons
+          name={isDark ? "light-mode" : "dark-mode"}
+          size={24}
+          color={textColor}
+        />
+      </TouchableOpacity>
+
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <ThemedText style={styles.appTitle} type="title">
-            Roomies Chore
-          </ThemedText>
+          <View style={styles.logoContainer}>
+            <Logo width={180} height={60} />
+          </View>
           <ThemedText style={styles.appSubtitle} type="subtitle">
-            Management App
+            Manage chores with your roommates
           </ThemedText>
         </View>
 
@@ -429,30 +451,53 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  themeToggle: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
   scrollContent: {
     flexGrow: 1,
     padding: 24,
+    paddingTop: 100,
     justifyContent: "center",
   },
   header: {
     alignItems: "center",
-    marginBottom: 40,
+    marginBottom: 48,
   },
-  appTitle: {
-    fontSize: 32,
-    marginBottom: 8,
-    textAlign: "center",
+  logoContainer: {
+    marginBottom: 16,
+    alignItems: "center",
+    justifyContent: "center",
   },
   appSubtitle: {
-    fontSize: 18,
+    fontSize: 16,
     textAlign: "center",
     opacity: 0.7,
+    marginTop: 8,
   },
   toggleContainer: {
     flexDirection: "row",
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 30,
+    borderRadius: 16,
+    padding: 6,
+    marginBottom: 32,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   toggleButton: {
     flex: 1,
@@ -495,7 +540,7 @@ const styles = StyleSheet.create({
     width: "100%",
     padding: 16,
     borderRadius: 12,
-    borderWidth: 1,
+    borderWidth: 1.5,
     fontSize: 16,
   },
   hint: {
@@ -546,16 +591,16 @@ const styles = StyleSheet.create({
   },
   submitButton: {
     width: "100%",
-    padding: 16,
-    borderRadius: 12,
+    padding: 18,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    marginTop: 8,
+    marginTop: 12,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
   },
   submitButtonDisabled: {
     opacity: 0.6,
