@@ -8,7 +8,7 @@ import { getCurrentUserId } from '@/services/auth';
 import { getUpcomingTasksScalable, getUserData, getUserGroupsScalable } from '@/services/database';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Interface for task data returned from database
@@ -118,6 +118,7 @@ export default function DashboardScreen() {
 
   // Main dashboard render
   return (
+    
     <ThemedView style={styles.container}>
       <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
         <View style={styles.content}>
@@ -128,7 +129,7 @@ export default function DashboardScreen() {
               Welcome{userFirstName ? `, ${userFirstName}${userLastName ? ` ${userLastName}` : ''}` : ''}!
             </ThemedText>
           </View>
-
+        <ScrollView>
           {/* Groups section */}
           <View style={styles.section}>
             <ThemedText style={styles.sectionTitle}>My Groups</ThemedText>
@@ -167,6 +168,7 @@ export default function DashboardScreen() {
               </View>
             )}
           </View>
+        </ScrollView>
         </View>
       </SafeAreaView>
     </ThemedView>

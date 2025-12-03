@@ -7,7 +7,7 @@ import { useThemeColor } from '@/hooks/use-theme-color';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { collection, doc, getDoc, onSnapshot, query, where } from 'firebase/firestore';
 import { useCallback, useState } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Interface for task data returned from database
@@ -158,7 +158,7 @@ export default function GroupScreen() {
             <ThemedText style={styles.dateText}>{dateString}</ThemedText>
             <ThemedText style={styles.groupName}>{groupName}</ThemedText>
           </View>
-
+        <ScrollView>
           {/* Individual Tasks Section */}
           <View style={styles.section}>
             <ThemedText style={styles.sectionTitle}>Individual Tasks</ThemedText>
@@ -182,6 +182,7 @@ export default function GroupScreen() {
               </View>
             )}
           </View>
+          </ScrollView>
         </View>
       </SafeAreaView>
     </ThemedView>
