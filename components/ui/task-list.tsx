@@ -4,6 +4,7 @@ import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
 import { FlatList, Modal, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import TaskForm from './task-form';
 
 type Task = {
   id: string;
@@ -50,6 +51,10 @@ export default function TaskList({ tasks, textColors }:TaskListProps) {
 
     }
 
+
+  function handleEditTask(taskData: Task): void {
+    throw new Error('Function not implemented.');
+  }
 
   return (
 <SafeAreaView>
@@ -110,8 +115,23 @@ export default function TaskList({ tasks, textColors }:TaskListProps) {
       <TouchableWithoutFeedback onPress={() => setSelectedTask(null)}>
         <View style={{backgroundColor: 'rgba(0, 0, 0, 0.75)', flex: 1, alignItems: 'center', justifyContent: 'center'}}>
           <TouchableWithoutFeedback onPress={() => {}}>
-          <View style={{backgroundColor: 'white', width: 200, height: 300}}>
-            <ThemedText>{selectedTask.id}</ThemedText>
+          <View style={{backgroundColor: 'white', width: '80%', height: '80%'}}>
+            {/* <ThemedText>{selectedTask.id}</ThemedText> */}
+            <TaskForm 
+              initialTaskData={{
+                description: selectedTask.description,
+                creator: selectedTask.creator,
+                assignees: selectedTask.assignees?.[0],
+                group: selectedTask.group,
+                due_date: selectedTask.due_date,
+                is_done: selectedTask.is_done,
+                priority: selectedTask.priority
+                }} 
+              onSubmit={() => { handleEditTask } } 
+              pageHeading='Edit Task'
+              showDeleteButton>
+
+            </TaskForm>
               {/* <View style={styles.modalContent}>
               <Image
                       source={{ uri: selectedOutfit.image }}
