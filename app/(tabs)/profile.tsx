@@ -29,6 +29,10 @@ export default function ProfileScreen() {
   } | null>(null);
   const [loadingUserData, setLoadingUserData] = useState(true);
 
+
+   // Track errors specifically when loading the user profile from Firestore
+  const [userDataError, setUserDataError] = useState<string | null>(null);
+
   // Get theme colors for styling
   const { theme, toggleTheme } = useTheme();
   const tintColor = useThemeColor({}, "tint");
@@ -40,11 +44,16 @@ export default function ProfileScreen() {
   useEffect(() => {
     const loadUserData = async () => {
       try {
+        setUserDataError(null); 
         const userId = await getCurrentUserId();
         const data = await getUserData(userId);
+         if (!data) {
+          setUserDataError("Could not load your profile.");
+        }
         setUserData(data || null);
       } catch (error) {
         console.error('Error loading user data:', error);
+         setUserDataError("Failed to load your profile."); 
       } finally {
         setLoadingUserData(false);
       }

@@ -1,23 +1,22 @@
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useThemeColor } from "@/hooks/use-theme-color";
 import { getCurrentUserId } from "@/services/auth";
 import { createTask, getGroupMembers, getUserGroupsScalable } from "@/services/database";
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
-  View,
-  ActivityIndicator,
+  View
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
-import { useThemeColor } from "@/hooks/use-theme-color";
-import { useTheme } from "@/contexts/ThemeContext";
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 // Interface for creating a new task
 interface CreateTaskData {
@@ -62,6 +61,12 @@ export default function AddTaskScreen() {
     groupId: "",
   });
 
+   // Extra state for loading/error around groups & members
+  const [groupsError, setGroupsError] = useState<string | null>(null);   
+  const [membersLoading, setMembersLoading] = useState(false);           
+  const [membersError, setMembersError] = useState<string | null>(null);
+
+
   // Load user's groups on component mount
   useEffect(() => {
     const loadUserGroups = async () => {
@@ -86,6 +91,11 @@ export default function AddTaskScreen() {
     setGroupId(selectedGroupId);
     setShowGroupDropdown(false);
     
+    // When group changes, we start loading members and clear any old member error
+    setMembersLoading(true);
+    setMembersError(null);
+
+
     try {
       // Fetch members of the selected group
       const members = await getGroupMembers(selectedGroupId);
@@ -95,7 +105,10 @@ export default function AddTaskScreen() {
       setAssignee("");
     } catch (error) {
       console.error('Error loading group members:', error);
+      setMembersError('Failed to load group members.');
       Alert.alert('Error', 'Failed to load group members');
+    } finally {
+      setMembersLoading(false);
     }
   };
 
