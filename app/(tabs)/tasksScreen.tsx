@@ -1,15 +1,15 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import TaskList from '@/components/ui/task-list';
+import { useTheme } from '@/contexts/ThemeContext';
 import { db } from '@/database/firebase';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { useTheme } from '@/contexts/ThemeContext';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 
 type Task = {
@@ -64,6 +64,7 @@ export default function TasksScreen() {
                 });
                 setTasks(tasksData);
                 setLoading(false);
+                 setError(null);
             },
             (error) => {
                 console.error('Error fetching tasks:', error);
@@ -125,6 +126,22 @@ export default function TasksScreen() {
                             <ThemedText style={[styles.errorText, { color: '#ff3b30' }]}>
                                 {error}
                             </ThemedText>
+                             {/* Retry button to re-mount screen and trigger snapshot again */}
+                            <TouchableOpacity
+                                onPress={() => router.replace('/(tabs)/tasksScreen')}
+                                style={[
+                                    styles.actionButton,
+                                    {
+                                        marginTop: 20,
+                                        backgroundColor: isDark ? '#2a2a2a' : '#f0f0f0',
+                                        borderColor: isDark ? '#3a3a3a' : '#e0e0e0',
+                                    }
+                                ]}
+                            >
+                                <ThemedText style={styles.buttonText}>
+                                    Retry
+                                </ThemedText>
+                            </TouchableOpacity>
                         </View>
                     ) : tasks.length > 0 ? (
                         <TaskList tasks={tasks} />

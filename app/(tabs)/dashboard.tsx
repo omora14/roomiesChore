@@ -41,11 +41,15 @@ export default function DashboardScreen() {
   const [tasks, setTasks] = useState<Task[]>([]); 
   const [loading, setLoading] = useState(true);
 
+  // Track an error for the whole dashboard load
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
+
   // Load dashboard data when component mounts
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
+          setDashboardError(null); 
         
         // Step 1: Get current authenticated user ID
         const currentUserId = await getCurrentUserId();
@@ -80,6 +84,9 @@ export default function DashboardScreen() {
         
       } catch (error) {
         console.error('Error loading dashboard:', error);
+
+          // Set a user-facing error message
+        setDashboardError('Failed to load dashboard data.');
         
         // Set fallback values on error
         setUserFirstName('User');
