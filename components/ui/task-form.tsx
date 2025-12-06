@@ -3,7 +3,7 @@ import { ThemedView } from "@/components/themed-view";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { getCurrentUserId } from "@/services/auth";
-import { createTask, getGroupMembers, getUserGroupsScalable } from "@/services/database";
+import { getGroupMembers, getUserGroupsScalable } from "@/services/database";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
 import { DocumentReference } from "firebase/firestore";
@@ -28,7 +28,7 @@ interface TaskData {
   group: string | DocumentReference;         // Group ID where task belongs
   due_date: string;          // Date in YYYY-MM-DD format (will convert to Timestamp)
   is_done: boolean;          // Completion status (always false for new tasks)
-  priority?: string;         // Optional: Low, Medium, High
+  priority: string;         // Optional: Low, Medium, High
 }
 
 interface TaskFormProps {
@@ -47,7 +47,7 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
   const isDark = theme === "dark";
 
   const [title, setTitle] = useState(initialTaskData?.description || "");
-//   const [description, setDescription] = useState(initialTaskData?.description || "");
+  //   const [description, setDescription] = useState(initialTaskData?.description || "");
   const [assigneeId, setAssignee] = useState(initialTaskData?.assignees?.[0] || "");
   const [dueDate, setDueDate] = useState(initialTaskData?.due_date ? new Date(initialTaskData?.due_date).toISOString().split("T")[0] : "");
   const [priority, setPriority] = useState(initialTaskData?.priority || "");
@@ -55,14 +55,15 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
   
   // Dynamic state for groups and assignees
   const [groupOptions, setGroupOptions] = useState<{ id: string; name: string; color?: string }[]>([]);
+
   const [assigneOptions, setAssigneOptions] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
-
+  
   const [groupId, setGroupId] = useState(initialTaskData?.group || "");
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
-
+  
   // Validation states
   const [errors, setErrors] = useState({
     title: "",
@@ -79,6 +80,9 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
         const userGroups = await getUserGroupsScalable(currentUserId);
 
         setGroupOptions(userGroups);
+        console.log("🔥 priority in initialTaskData:", initialTaskData?.priority);
+        console.log("🔥 Full initialTaskData:", initialTaskData);
+console.log("🔥 priority value:", initialTaskData?.priority);
         
       } catch (error) {
         console.error('Error loading groups:', error);
@@ -129,60 +133,64 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
   };
 
   // Handle Add Task
-  const handleAddTask = async () => {
-    let newErrors = { title: "", assigneeId: "", groupId: "" };
-    let hasError = false;
+//   const handleAddTask = async () => {
+//     let newErrors = { title: "", assigneeId: "", groupId: "" };
+//     let hasError = false;
 
-    if (!title.trim()) {
-      newErrors.title = "Title is required.";
-      hasError = true;
-    }
-    if (!assigneeId.trim()) {
-      newErrors.assigneeId = "Assignee is required.";
-      hasError = true;
-    }
-    if (!groupId.trim()) {
-      newErrors.groupId = "You must select a group.";
-      hasError = true;
-    }
+//     if (!title.trim()) {
+//       newErrors.title = "Title is required.";
+//       hasError = true;
+//     }
+//     if (!assigneeId.trim()) {
+//       newErrors.assigneeId = "Assignee is required.";
+//       hasError = true;
+//     }
+//     if (!groupId.trim()) {
+//       newErrors.groupId = "You must select a group.";
+//       hasError = true;
+//     }
 
-    setErrors(newErrors);
+//     setErrors(newErrors);
 
-    if (hasError) return;
+//     if (hasError) return;
 
-    setSubmitting(true);
-    try {
-      // Get current user as creator
-      const currentUserId = await getCurrentUserId();
+//     setSubmitting(true);
+//     try {
+//       // Get current user as creator
+//       const currentUserId = await getCurrentUserId();
       
-      // Create task in Firestore
-      const taskId = await createTask({
-        description: title,
-        creator: currentUserId,
-        assignees: [assigneeId],
-        group: groupId,
-        due_date: dueDate,
-        priority: priority,
-      });
+//       // Create task in Firestore
+//       const taskId = await createTask({
+//         description: title,
+//         creator: currentUserId,
+//         assignees: [assigneeId],
+//         group: groupId,
+//         due_date: dueDate,
+//         priority: priority,
+//       });
 
-      console.log("Task created successfully with ID:", taskId);
+//       console.log("Task created successfully with ID:", taskId);
       
-      Alert.alert("Success", "Task created successfully!");
+//       Alert.alert("Success", "Task created successfully!");
 
-      // Navigate back to Tasks tab
-      setTimeout(() => {
-        router.replace("/(tabs)/tasksScreen");
-      }, 500);
+//       // Navigate back to Tasks tab
+//       setTimeout(() => {
+//         router.replace("/(tabs)/tasksScreen");
+//       }, 500);
       
-    } catch (error) {
-      console.error("Error creating task:", error);
-      Alert.alert("Error", "Failed to create task. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+//     } catch (error) {
+//       console.error("Error creating task:", error);
+//       Alert.alert("Error", "Failed to create task. Please try again.");
+//     } finally {
+//       setSubmitting(false);
+//     }
+//   };
 
     function handleDeleteTask(event: GestureResponderEvent): void {
+        throw new Error("Function not implemented.");
+    }
+
+    function handleEditTask(event: GestureResponderEvent): void {
         throw new Error("Function not implemented.");
     }
 
@@ -419,7 +427,7 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
             { backgroundColor: tintColor },
             submitting && styles.buttonDisabled
           ]}
-          onPress={handleAddTask}
+          onPress={handleEditTask}
           disabled={submitting}
         >
           {submitting ? (

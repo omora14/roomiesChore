@@ -22,6 +22,7 @@ type Task = {
   is_done: boolean;
   createdAt: any;
   updatedAt: any;
+  priority?: any;
 }
 
 
@@ -73,6 +74,7 @@ export default function GroupScreen() {
             createdAt: data.createdAt?.toDate(),
             updatedAt: data.updatedAt?.toDate(),
             due_date: data.due_date?.toDate(), 
+            priority: data.priority ?? "None"
           };
         });
         setIndividualTasks(individualTasks);
@@ -126,6 +128,7 @@ export default function GroupScreen() {
             createdAt: data.createdAt?.toDate(),
             updatedAt: data.updatedAt?.toDate(),
             due_date: data.due_date?.toDate(), 
+            priority: data.priority ?? "None",
           };
         });
         setGroupTasks(groupTasks);

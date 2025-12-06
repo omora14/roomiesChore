@@ -36,7 +36,8 @@ export default function TaskList({ tasks, textColors }:TaskListProps) {
   const [taskAssignee, setTaskAssignee] = useState("");
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskPriority, setTaskPriority] = useState("");
-
+  console.log("Selected task: ")
+  console.log(selectedTask);
   
   async function toggleCompletion(task: Task) {
     const docRef = doc(db, 'tasks', task.id);

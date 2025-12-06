@@ -1,15 +1,15 @@
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import TaskList from '@/components/ui/task-list';
+import { useTheme } from '@/contexts/ThemeContext';
 import { db } from '@/database/firebase';
+import { useThemeColor } from '@/hooks/use-theme-color';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { useTheme } from '@/contexts/ThemeContext';
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 
 type Task = {
@@ -23,6 +23,7 @@ type Task = {
     is_done?: boolean;
     createdAt?: any;
     updatedAt?: any;
+    priority?: any;
 };
 
 
