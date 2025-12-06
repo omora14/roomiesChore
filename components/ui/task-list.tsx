@@ -122,7 +122,7 @@ export default function TaskList({ tasks, textColors }:TaskListProps) {
                 description: selectedTask.description,
                 creator: selectedTask.creator,
                 assignees: selectedTask.assignees?.[0],
-                group: selectedTask.group,
+                group: typeof selectedTask.group !== "string" ? selectedTask.group.id: selectedTask.group,
                 due_date: selectedTask.due_date,
                 is_done: selectedTask.is_done,
                 priority: selectedTask.priority

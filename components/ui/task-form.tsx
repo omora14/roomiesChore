@@ -6,10 +6,12 @@ import { getCurrentUserId } from "@/services/auth";
 import { createTask, getGroupMembers, getUserGroupsScalable } from "@/services/database";
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from "expo-router";
+import { DocumentReference } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
     Alert,
+    GestureResponderEvent,
     ScrollView,
     StyleSheet,
     TextInput,
@@ -23,7 +25,7 @@ interface TaskData {
   description: string;        // Task title/description
   creator: string;           // User ID of creator
   assignees: string[];       // Array of user IDs assigned to task
-  group: string;             // Group ID where task belongs
+  group: string | DocumentReference;         // Group ID where task belongs
   due_date: string;          // Date in YYYY-MM-DD format (will convert to Timestamp)
   is_done: boolean;          // Completion status (always false for new tasks)
   priority?: string;         // Optional: Low, Medium, High
@@ -56,7 +58,7 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
   const [assigneOptions, setAssigneOptions] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [groupId, setGroupId] = useState("");
+  const [groupId, setGroupId] = useState(initialTaskData?.group || "");
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
@@ -75,7 +77,9 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
         setLoading(true);
         const currentUserId = await getCurrentUserId();
         const userGroups = await getUserGroupsScalable(currentUserId);
+
         setGroupOptions(userGroups);
+        
       } catch (error) {
         console.error('Error loading groups:', error);
         Alert.alert('Error', 'Failed to load groups');
@@ -422,7 +426,7 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
             <ActivityIndicator color="white" />
           ) : (
             <>
-              <MaterialIcons name="add-task" size={20} color="white" />
+              <MaterialIcons name="check" size={20} color="white" />
               <ThemedText style={styles.buttonText}>Save Changes</ThemedText>
             </>
           )}
