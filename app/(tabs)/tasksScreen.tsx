@@ -86,7 +86,7 @@ export default function TasksScreen() {
                     {/* Action Buttons */}
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
-                            onPress={() => console.log('Create Group Pressed')}
+                            onPress={() => router.push('/(tabs)/createGroup')}
                             style={[
                                 styles.actionButton,
                                 {
