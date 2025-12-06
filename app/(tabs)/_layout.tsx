@@ -79,6 +79,19 @@ export default function TabLayout() {
           ),
         }}
       />
+     <Tabs.Screen
+        name="createGroup"
+        options={{
+          title: 'Create Group',
+          tabBarIcon: ({ color, focused }) => (
+            <IconSymbol
+              size={focused ? 30 : 28}
+              name="person.2.badge.plus"
+              color={color}
+            />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="profile"
         options={{
