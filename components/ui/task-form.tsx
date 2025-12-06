@@ -49,6 +49,9 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
   const [title, setTitle] = useState(initialTaskData?.description || "");
   //   const [description, setDescription] = useState(initialTaskData?.description || "");
   const [assigneeId, setAssignee] = useState(initialTaskData?.assignees?.[0] || "");
+  const [groupMembers, setGroupMembers] = useState([]);
+
+  
   const [dueDate, setDueDate] = useState(initialTaskData?.due_date ? new Date(initialTaskData?.due_date).toISOString().split("T")[0] : "");
   const [priority, setPriority] = useState(initialTaskData?.priority || "");
   const [submitting, setSubmitting] = useState(false);
@@ -60,6 +63,7 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
   const [loading, setLoading] = useState(true);
   
   const [groupId, setGroupId] = useState(initialTaskData?.group || "");
+  const [selectedGroupId, setSelectedGroupId] = useState(initialTaskData?.group || "");
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
@@ -80,9 +84,6 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
         const userGroups = await getUserGroupsScalable(currentUserId);
 
         setGroupOptions(userGroups);
-        console.log("🔥 priority in initialTaskData:", initialTaskData?.priority);
-        console.log("🔥 Full initialTaskData:", initialTaskData);
-console.log("🔥 priority value:", initialTaskData?.priority);
         
       } catch (error) {
         console.error('Error loading groups:', error);
@@ -95,6 +96,30 @@ console.log("🔥 priority value:", initialTaskData?.priority);
     loadUserGroups();
   }, []);
 
+  useEffect(() => {
+    if (!initialTaskData?.group) return;
+  
+    let groupId: string;
+  
+    // Change the groupId to a string if it isn't.
+    if (typeof initialTaskData.group !== "string") {
+      groupId = initialTaskData.group.id; 
+    } else {
+      groupId = initialTaskData.group;
+    }
+  
+    setSelectedGroupId(groupId);
+    handleGroupSelection(groupId);
+  }, [initialTaskData]);
+
+// There's only one assignee for each task, so automatically load it.
+useEffect(() => {
+    if (assigneOptions.length > 0 && !assigneeId) {
+      setAssignee(assigneOptions[0].id);
+    }
+  }, [assigneOptions]);
+  
+
   // Handle group selection and load members
   const handleGroupSelection = async (selectedGroupId: string) => {
     setGroupId(selectedGroupId);
@@ -106,7 +131,8 @@ console.log("🔥 priority value:", initialTaskData?.priority);
       setAssigneOptions(members);
       
       // Reset assignee since group changed
-      setAssignee("");
+
+          setAssignee("");
     } catch (error) {
       console.error('Error loading group members:', error);
       Alert.alert('Error', 'Failed to load group members');
@@ -131,60 +157,6 @@ console.log("🔥 priority value:", initialTaskData?.priority);
 
     return formatted;
   };
-
-  // Handle Add Task
-//   const handleAddTask = async () => {
-//     let newErrors = { title: "", assigneeId: "", groupId: "" };
-//     let hasError = false;
-
-//     if (!title.trim()) {
-//       newErrors.title = "Title is required.";
-//       hasError = true;
-//     }
-//     if (!assigneeId.trim()) {
-//       newErrors.assigneeId = "Assignee is required.";
-//       hasError = true;
-//     }
-//     if (!groupId.trim()) {
-//       newErrors.groupId = "You must select a group.";
-//       hasError = true;
-//     }
-
-//     setErrors(newErrors);
-
-//     if (hasError) return;
-
-//     setSubmitting(true);
-//     try {
-//       // Get current user as creator
-//       const currentUserId = await getCurrentUserId();
-      
-//       // Create task in Firestore
-//       const taskId = await createTask({
-//         description: title,
-//         creator: currentUserId,
-//         assignees: [assigneeId],
-//         group: groupId,
-//         due_date: dueDate,
-//         priority: priority,
-//       });
-
-//       console.log("Task created successfully with ID:", taskId);
-      
-//       Alert.alert("Success", "Task created successfully!");
-
-//       // Navigate back to Tasks tab
-//       setTimeout(() => {
-//         router.replace("/(tabs)/tasksScreen");
-//       }, 500);
-      
-//     } catch (error) {
-//       console.error("Error creating task:", error);
-//       Alert.alert("Error", "Failed to create task. Please try again.");
-//     } finally {
-//       setSubmitting(false);
-//     }
-//   };
 
     function handleDeleteTask(event: GestureResponderEvent): void {
         throw new Error("Function not implemented.");
