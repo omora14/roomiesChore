@@ -33,6 +33,7 @@ interface TaskData {
   is_done: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  priority: string;
 }
 
 /**
@@ -167,6 +168,7 @@ export const getUpcomingTasksScalable = async (userId: string) => {
             is_done: data.is_done,
             createdAt: data.createdAt?.toDate(), // Convert Timestamp to Date
             updatedAt: data.updatedAt?.toDate(), // Convert Timestamp to Date
+            priority: data.priority || 'None',
           };
         }
       }

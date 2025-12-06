@@ -1,8 +1,10 @@
 import { ThemedText } from '@/components/themed-text';
 import { db } from '@/database/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import React from 'react';
-import { FlatList, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { FlatList, Modal, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import TaskForm from './task-form';
 
 type Task = {
   id: string;
@@ -14,6 +16,7 @@ type Task = {
   due_date?: any;
   is_done?: boolean;
   createdAt?: any;
+  priority?: any;
   updatedAt?: any;
 };
 type TaskListProps = {
@@ -24,7 +27,17 @@ type TaskListProps = {
   };
 };
 
+
 export default function TaskList({ tasks, textColors }:TaskListProps) {
+  
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskGroup, setTaskGroup] = useState("");
+  const [taskAssignee, setTaskAssignee] = useState("");
+  const [taskDueDate, setTaskDueDate] = useState("");
+  const [taskPriority, setTaskPriority] = useState("");
+  console.log("Selected task: ")
+  console.log(selectedTask);
   
   async function toggleCompletion(task: Task) {
     const docRef = doc(db, 'tasks', task.id);
@@ -40,15 +53,30 @@ export default function TaskList({ tasks, textColors }:TaskListProps) {
     }
 
 
-  return (
+  function handleEditTask(taskData: Task): void {
+    throw new Error('Function not implemented.');
+  }
 
+  return (
+<SafeAreaView>
 
     <FlatList
       data={tasks}
       renderItem={({ item }) => {
         const done = !!item.is_done;
         return (
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: 'lightgrey', borderRadius: 10, padding: 15 }}>
+          <TouchableOpacity 
+            onPress={() => {
+              setSelectedTask(item);
+              setTaskDescription(item.description || "");
+              setTaskAssignee(item.assignees?.[0] || "");
+              setTaskGroup(item.group || "");
+              setTaskDueDate(item.due_date || "");
+              setTaskPriority(item.priority || "");
+
+            }
+            }
+            style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: 'lightgrey', borderRadius: 10, padding: 15 }}>
             <View style={{ flex: 1, paddingRight: 12 }}>
               <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ fontWeight: '600', marginBottom: 4 }}>{item.description}</ThemedText>
               {item.assignees ? (
@@ -70,7 +98,7 @@ export default function TaskList({ tasks, textColors }:TaskListProps) {
                 <ThemedText style={{ color: 'green', fontSize: 14 }}>✓</ThemedText>
               ) : null}
             </TouchableOpacity>
-          </View>
+          </TouchableOpacity>
         );
       }}
       contentContainerStyle={{ padding: 16 }}
@@ -82,5 +110,60 @@ export default function TaskList({ tasks, textColors }:TaskListProps) {
 
       }
     />
-  )
+
+    {selectedTask && (
+      <Modal transparent style={{alignItems: 'center', justifyContent: 'center'}}>
+      <TouchableWithoutFeedback onPress={() => setSelectedTask(null)}>
+        <View style={{backgroundColor: 'rgba(0, 0, 0, 0.75)', flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+          <TouchableWithoutFeedback onPress={() => {}}>
+          <View style={{backgroundColor: 'white', width: '80%', height: '80%'}}>
+            {/* <ThemedText>{selectedTask.id}</ThemedText> */}
+            <TaskForm 
+              initialTaskData={{
+                description: selectedTask.description,
+                creator: selectedTask.creator,
+                assignees: selectedTask.assignees?.[0],
+                group: typeof selectedTask.group !== "string" ? selectedTask.group.id: selectedTask.group,
+                due_date: selectedTask.due_date,
+                is_done: selectedTask.is_done,
+                priority: selectedTask.priority
+                }} 
+              onSubmit={() => { handleEditTask } } 
+              pageHeading='Edit Task'
+              showDeleteButton>
+
+            </TaskForm>
+              {/* <View style={styles.modalContent}>
+              <Image
+                      source={{ uri: selectedOutfit.image }}
+                      style={styles.modalImage}
+                  />
+              <TextInput
+              placeholder='Outfit Description'
+              value={description}
+              onChangeText={setDescription}
+              />
+              <TextInput
+              placeholder='Outfit Category'
+              value={category}
+              onChangeText={setCategory}
+              />
+              <TouchableOpacity style={styles.modalButton} onPress={() => editOutfit(selectedOutfit.id)}>
+                  <Text style={styles.modalButtonText}>EDIT OUTFIT</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalButton} onPress={() => deleteOutfit(selectedOutfit.id)}>
+                  <Text style={styles.modalButtonText}>DELETE OUTFIT</Text>
+              </TouchableOpacity>
+              </View> */}
+          </View>
+          </TouchableWithoutFeedback>
+          </View>
+          </TouchableWithoutFeedback>
+      </Modal>
+  )}
+
+</SafeAreaView>
+
+    )
+  
 };

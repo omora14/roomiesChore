@@ -23,6 +23,7 @@ type Task = {
     is_done?: boolean;
     createdAt?: any;
     updatedAt?: any;
+    priority?: any;
 };
 
 
