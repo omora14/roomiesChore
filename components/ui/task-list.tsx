@@ -2,23 +2,39 @@ import { ThemedText } from '@/components/themed-text';
 import { db } from '@/database/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import React, { useState } from 'react';
-import { FlatList, Modal, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import { FlatList, Modal, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import TaskForm from './task-form';
 
+type User = {
+  id: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  [key: string]: any;
+};
+
+type Group = {
+  id: string;
+  name?: string;
+  group_name?: string;
+  color?: string;
+  [key: string]: any;
+};
+
 type Task = {
   id: string;
-  // title: string;
-  description?: string;
-  creator?: any;
-  assignees?: any[];
-  group?: any;
-  due_date?: any;
-  is_done?: boolean;
+  description: string;
+  creator: User | string;
+  assignees: User[] | any[];
+  group: Group | string;
+  due_date: string | Date;
+  is_done: boolean;
   createdAt?: any;
   priority?: any;
   updatedAt?: any;
 };
+
 type TaskListProps = {
   tasks: Task[];
   textColors?: {
@@ -27,143 +43,278 @@ type TaskListProps = {
   };
 };
 
+// Helper function to get display name for a user
+const getUserDisplayName = (user: User | string): string => {
+  if (typeof user === 'string') return user;
 
-export default function TaskList({ tasks, textColors }:TaskListProps) {
-  
+  // Prefer firstName + lastName combination
+  if (user.firstName || user.lastName) {
+    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
+    if (fullName) return fullName;
+  }
+
+  // Fallback to name, email, or unknown
+  return user.name || user.email || 'Unknown User';
+};
+
+// Helper function to get display name for a group
+const getGroupDisplayName = (group: Group | string): string => {
+  if (typeof group === 'string') return group;
+
+  // Prefer group_name, then name
+  return group.group_name || group.name || 'Uncategorized';
+};
+
+export default function TaskList({ tasks, textColors }: TaskListProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [taskDescription, setTaskDescription] = useState("");
   const [taskGroup, setTaskGroup] = useState("");
   const [taskAssignee, setTaskAssignee] = useState("");
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskPriority, setTaskPriority] = useState("");
-  console.log("Selected task: ")
-  console.log(selectedTask);
-  
+
   async function toggleCompletion(task: Task) {
-    const docRef = doc(db, 'tasks', task.id);
-    const document = await getDoc(docRef);
-    const data = document.data();
+    try {
+      const docRef = doc(db, 'tasks', task.id);
+      const document = await getDoc(docRef);
+      const data = document.data();
 
-    // Make sure there is data before trying to change it.
-    if (!data) return;
+      // Make sure there is data before trying to change it
+      if (!data) return;
 
-    // Change is_done to whatever it isn't currently
-    await updateDoc(docRef, { is_done: !data.is_done })
-
+      // Change is_done to whatever it isn't currently
+      await updateDoc(docRef, { is_done: !data.is_done });
+    } catch (error) {
+      console.error('Error toggling task completion:', error);
     }
-
-
-  function handleEditTask(taskData: Task): void {
-    throw new Error('Function not implemented.');
   }
 
-  return (
-<SafeAreaView>
+  function handleEditTask(taskData: Task): void {
+    // TODO: Implement task editing
+    console.log('Edit task:', taskData);
+  }
 
-    <FlatList
-      data={tasks}
-      renderItem={({ item }) => {
-        const done = !!item.is_done;
-        return (
-          <TouchableOpacity 
-            onPress={() => {
-              setSelectedTask(item);
-              setTaskDescription(item.description || "");
-              setTaskAssignee(item.assignees?.[0] || "");
-              setTaskGroup(item.group || "");
-              setTaskDueDate(item.due_date || "");
-              setTaskPriority(item.priority || "");
+  const renderTaskItem = ({ item }: { item: Task }) => {
+    const done = !!item.is_done;
 
-            }
-            }
-            style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', borderWidth: 1, borderColor: 'lightgrey', borderRadius: 10, padding: 15 }}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ fontWeight: '600', marginBottom: 4 }}>{item.description}</ThemedText>
-              {item.assignees ? (
-                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Assignees: {item.assignees.map(a => a.id || String(a)).join(', ')}</ThemedText>
-              ) : null}
-              {item.group ? (
-                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Group: {item.group.id}</ThemedText>
-              ) : null}
-              {item.due_date ? (
-                <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark} style={{ opacity: 0.8 }}>Due: {new Date(item.due_date).toLocaleDateString()}</ThemedText>
-              ) : null}
-            </View>
-            <TouchableOpacity
-              style={{ height: 24, width: 24, borderRadius: 100, borderWidth: 2, borderColor: done ? 'green' : 'blue', alignItems: 'center', justifyContent: 'center' }}
-              onPress={() => { toggleCompletion(item) }}
-              accessibilityLabel={done ? 'Task completed' : 'Mark task complete'}
+    // Get assignee names - display as "FirstName LastName"
+    const assigneeNames = item.assignees && item.assignees.length > 0
+      ? item.assignees.map(a => getUserDisplayName(a)).join(', ')
+      : 'Unassigned';
+
+    // Get group name - display as group_name
+    const groupName = item.group ? getGroupDisplayName(item.group) : 'Uncategorized';
+
+    // Get creator name
+    const creatorName = getUserDisplayName(item.creator);
+
+    // Format due date
+    const dueDate = item.due_date
+      ? new Date(item.due_date).toLocaleDateString()
+      : null;
+
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedTask(item);
+          setTaskDescription(item.description || "");
+          setTaskAssignee(item.assignees?.[0] || "");
+          setTaskGroup(typeof item.group === 'string' ? item.group : item.group.id || "");
+          setTaskDueDate(item.due_date ? new Date(item.due_date).toISOString() : "");
+          setTaskPriority(item.priority || "");
+        }}
+        style={styles.taskContainer}
+      >
+        <View style={styles.taskContent}>
+          <ThemedText
+            lightColor={textColors?.light}
+            darkColor={textColors?.dark}
+            style={styles.taskTitle}
+          >
+            {item.description}
+          </ThemedText>
+
+          <ThemedText
+            lightColor={textColors?.light}
+            darkColor={textColors?.dark}
+            style={styles.taskMeta}
+          >
+            Assigned to: {assigneeNames}
+          </ThemedText>
+
+          <ThemedText
+            lightColor={textColors?.light}
+            darkColor={textColors?.dark}
+            style={styles.taskMeta}
+          >
+            Group: {groupName}
+          </ThemedText>
+
+          {dueDate ? (
+            <ThemedText
+              lightColor={textColors?.light}
+              darkColor={textColors?.dark}
+              style={styles.taskMeta}
             >
-              {done ? (
-                <ThemedText style={{ color: 'green', fontSize: 14 }}>✓</ThemedText>
-              ) : null}
-            </TouchableOpacity>
-          </TouchableOpacity>
-        );
-      }}
-      contentContainerStyle={{ padding: 16 }}
-      ItemSeparatorComponent={() => <View style={{ height: 10 }} />} // space between items
-      keyExtractor={(item) => item.id.toString()}
-      ListEmptyComponent={
-        <ThemedText lightColor={textColors?.light} darkColor={textColors?.dark}>No tasks yet!</ThemedText>
+              Due: {dueDate}
+            </ThemedText>
+          ) : null}
 
+          <ThemedText
+            lightColor="#666"
+            darkColor="#999"
+            style={styles.taskCreator}
+          >
+            Created by: {creatorName}
+          </ThemedText>
+        </View>
 
-      }
-    />
+        <TouchableOpacity
+          style={[styles.completeButton, { borderColor: done ? 'green' : 'blue' }]}
+          onPress={(e) => {
+            e.stopPropagation();
+            toggleCompletion(item);
+          }}
+          accessibilityLabel={done ? 'Task completed' : 'Mark task complete'}
+        >
+          {done ? (
+            <ThemedText style={styles.checkmark}>✓</ThemedText>
+          ) : null}
+        </TouchableOpacity>
+      </TouchableOpacity>
+    );
+  };
 
-    {selectedTask && (
-      <Modal transparent style={{alignItems: 'center', justifyContent: 'center'}}>
-      <TouchableWithoutFeedback onPress={() => setSelectedTask(null)}>
-        <View style={{backgroundColor: 'rgba(0, 0, 0, 0.75)', flex: 1, alignItems: 'center', justifyContent: 'center'}}>
-          <TouchableWithoutFeedback onPress={() => {}}>
-          <View style={{backgroundColor: 'white', width: '80%', height: '80%'}}>
-            {/* <ThemedText>{selectedTask.id}</ThemedText> */}
-            <TaskForm 
-              initialTaskData={{
-                description: selectedTask.description,
-                creator: selectedTask.creator,
-                assignees: selectedTask.assignees?.[0],
-                group: typeof selectedTask.group !== "string" ? selectedTask.group.id: selectedTask.group,
-                due_date: selectedTask.due_date,
-                is_done: selectedTask.is_done,
-                priority: selectedTask.priority
-                }} 
-              onSubmit={() => { handleEditTask } } 
-              pageHeading='Edit Task'
-              showDeleteButton>
+  return (
+    <SafeAreaView>
+      <FlatList
+        data={tasks}
+        renderItem={renderTaskItem}
+        contentContainerStyle={styles.listContainer}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+        keyExtractor={(item) => item.id.toString()}
+        ListEmptyComponent={
+          <ThemedText
+            lightColor={textColors?.light}
+            darkColor={textColors?.dark}
+            style={styles.emptyText}
+          >
+            No tasks found. Create your first task!
+          </ThemedText>
+        }
+      />
 
-            </TaskForm>
-              {/* <View style={styles.modalContent}>
-              <Image
-                      source={{ uri: selectedOutfit.image }}
-                      style={styles.modalImage}
+      {selectedTask && (
+        <Modal transparent visible={!!selectedTask} onRequestClose={() => setSelectedTask(null)}>
+          <TouchableWithoutFeedback onPress={() => setSelectedTask(null)}>
+            <View style={styles.modalOverlay}>
+              <TouchableWithoutFeedback onPress={() => { }}>
+                <View style={styles.modalContent}>
+                  <TaskForm
+                    initialTaskData={{
+                      description: selectedTask.description,
+                      creator: typeof selectedTask.creator === 'string'
+                        ? selectedTask.creator
+                        : selectedTask.creator.id,
+                      assignees: Array.isArray(selectedTask.assignees) && selectedTask.assignees.length > 0
+                        ? typeof selectedTask.assignees[0] === 'string'
+                          ? selectedTask.assignees[0]
+                          : selectedTask.assignees[0].id
+                        : '',
+                      group: typeof selectedTask.group !== "string"
+                        ? selectedTask.group.id
+                        : selectedTask.group,
+                      due_date: selectedTask.due_date
+                        ? (typeof selectedTask.due_date === 'string'
+                          ? selectedTask.due_date
+                          : new Date(selectedTask.due_date).toISOString())
+                        : '',
+                      is_done: selectedTask.is_done,
+                      priority: selectedTask.priority
+                    }}
+                    onSubmit={() => {
+                      handleEditTask(selectedTask);
+                      setSelectedTask(null);
+                    }}
+                    pageHeading='Edit Task'
+                    showDeleteButton
                   />
-              <TextInput
-              placeholder='Outfit Description'
-              value={description}
-              onChangeText={setDescription}
-              />
-              <TextInput
-              placeholder='Outfit Category'
-              value={category}
-              onChangeText={setCategory}
-              />
-              <TouchableOpacity style={styles.modalButton} onPress={() => editOutfit(selectedOutfit.id)}>
-                  <Text style={styles.modalButtonText}>EDIT OUTFIT</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.modalButton} onPress={() => deleteOutfit(selectedOutfit.id)}>
-                  <Text style={styles.modalButtonText}>DELETE OUTFIT</Text>
-              </TouchableOpacity>
-              </View> */}
-          </View>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
           </TouchableWithoutFeedback>
-          </View>
-          </TouchableWithoutFeedback>
-      </Modal>
-  )}
+        </Modal>
+      )}
+    </SafeAreaView>
+  );
+}
 
-</SafeAreaView>
-
-    )
-  
-};
+const styles = StyleSheet.create({
+  listContainer: {
+    padding: 16,
+  },
+  taskContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 10,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  taskContent: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  taskTitle: {
+    fontWeight: '600',
+    fontSize: 16,
+    marginBottom: 6,
+  },
+  taskMeta: {
+    opacity: 0.8,
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  taskCreator: {
+    fontSize: 12,
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  completeButton: {
+    height: 24,
+    width: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  checkmark: {
+    color: 'green',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  separator: {
+    height: 10,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    opacity: 0.7,
+  },
+  modalOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    width: '80%',
+    height: '80%',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+});

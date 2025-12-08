@@ -4,28 +4,26 @@ import TaskList from '@/components/ui/task-list';
 import { useTheme } from '@/contexts/ThemeContext';
 import { db } from '@/database/firebase';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { getCurrentUserId } from '@/services/auth';
+import { resolveTaskData } from '@/services/database';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { doc, DocumentReference, getDoc, onSnapshot } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-
 type Task = {
     id: string;
-    // title: string;
-    description?: string;
-    creator?: any;
-    assignees?: any[];
-    group?: any;
-    due_date?: any;
-    is_done?: boolean;
+    description: string;
+    creator: any;
+    assignees: any[];
+    group: any;
+    due_date: string;
+    is_done: boolean;
     createdAt?: any;
     updatedAt?: any;
     priority?: any;
 };
-
 
 export default function TasksScreen() {
     const router = useRouter();
@@ -34,48 +32,139 @@ export default function TasksScreen() {
     const textColor = useThemeColor({}, "text");
     const tintColor = useThemeColor({}, "tint");
     const isDark = theme === "dark";
-    
+
     const [tasks, setTasks] = useState<Task[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        // Create a reference to the tasks collection
-        const tasksRef = collection(db, 'tasks');
-        // Create a query that orders tasks by due date
-        const q = query(tasksRef, orderBy('due_date', 'asc'));
+        const loadTasks = async () => {
+            try {
+                setLoading(true);
+                setError(null);
 
-        // Set up real-time listener
-        const unsubscribe = onSnapshot(
-            q,
-            (querySnapshot) => {
-                const tasksData: Task[] = [];
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    tasksData.push({
-                        id: doc.id,
-                        // title: data.title || 'Untitled Task',
-                        creator: data.creator || 'Unknown',
-                        assignees: data.assignees || 'Unassigned',
-                        description: data.description || '',
-                        group: data.group || 'Uncategorized',
-                        due_date: data.due_date?.toDate()?.toISOString() || new Date().toISOString(),
-                        is_done: data.is_done || false,
-                    });
-                });
-                setTasks(tasksData);
-                setLoading(false);
-                 setError(null);
-            },
-            (error) => {
-                console.error('Error fetching tasks:', error);
-                setError('Failed to load tasks. Please try again.');
+                // Get current authenticated user ID
+                let currentUserId;
+                try {
+                    currentUserId = await getCurrentUserId();
+                    console.log('Current User ID for Tasks:', currentUserId);
+                } catch (authError) {
+                    console.log('Authentication error:', authError);
+                    setError('Please sign in to view tasks');
+                    setLoading(false);
+                    // Optionally redirect to login screen
+                    router.replace('/login');
+                    return;
+                }
+
+                // Get user document to access assigned_tasks array
+                const userDocRef = doc(db, 'users', currentUserId);
+
+                // Function to load and resolve tasks
+                const loadAndResolveTasks = async () => {
+                    try {
+                        const userDoc = await getDoc(userDocRef);
+                        if (!userDoc.exists()) {
+                            console.log('User document not found');
+                            setTasks([]);
+                            setLoading(false);
+                            return;
+                        }
+
+                        const userData = userDoc.data();
+                        const assignedTaskRefs = userData?.assigned_tasks;
+
+                        if (!assignedTaskRefs || !Array.isArray(assignedTaskRefs) || assignedTaskRefs.length === 0) {
+                            console.log('No assigned tasks found');
+                            setTasks([]);
+                            setLoading(false);
+                            return;
+                        }
+
+                        // Fetch all task documents and resolve them using shared utility
+                        const taskPromises = assignedTaskRefs.map(async (taskRef: DocumentReference | string) => {
+                            try {
+                                const taskDoc = typeof taskRef === 'string'
+                                    ? await getDoc(doc(db, 'tasks', taskRef))
+                                    : await getDoc(taskRef);
+
+                                if (!taskDoc.exists()) {
+                                    return null;
+                                }
+
+                                const data = taskDoc.data();
+                                const resolvedTask = await resolveTaskData({
+                                    id: taskDoc.id,
+                                    description: data.description,
+                                    creator: data.creator,
+                                    assignees: data.assignees,
+                                    group: data.group,
+                                    due_date: data.due_date,
+                                    is_done: data.is_done,
+                                    createdAt: data.createdAt,
+                                    updatedAt: data.updatedAt,
+                                    priority: data.priority
+                                });
+
+                                return resolvedTask as Task;
+                            } catch (error) {
+                                console.error('Error fetching task:', error);
+                                return null;
+                            }
+                        });
+
+                        const allTasks = await Promise.all(taskPromises);
+                        const tasks: Task[] = allTasks.filter((task): task is Task => task !== null && task !== undefined);
+
+                        // Sort by due_date (ascending), with null dates at the end
+                        tasks.sort((a, b) => {
+                            const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity;
+                            const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity;
+                            return dateA - dateB;
+                        });
+
+                        setTasks(tasks);
+                        setLoading(false);
+                        setError(null);
+                    } catch (error) {
+                        console.error('Error loading tasks:', error);
+                        setError('Failed to load tasks. Please try again.');
+                        setLoading(false);
+                    }
+                };
+
+                // Initial load
+                await loadAndResolveTasks();
+
+                // Set up real-time listener on user document to watch for changes in assigned_tasks
+                const unsubscribe = onSnapshot(
+                    userDocRef,
+                    async (userSnapshot) => {
+                        if (userSnapshot.exists()) {
+                            await loadAndResolveTasks();
+                        }
+                    },
+                    (error) => {
+                        console.error('Error in user snapshot listener:', error);
+                        setError('Failed to load tasks. Please try again.');
+                        setLoading(false);
+                    }
+                );
+
+                // Clean up the listener on unmount
+                return () => unsubscribe();
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                if (error instanceof Error) {
+                    setError(error.message || 'Failed to load tasks. Please try again.');
+                } else {
+                    setError('An unexpected error occurred. Please try again.');
+                }
                 setLoading(false);
             }
-        );
+        };
 
-        // Clean up the listener on unmount
-        return () => unsubscribe();
+        loadTasks();
     }, []);
 
 
@@ -127,7 +216,7 @@ export default function TasksScreen() {
                             <ThemedText style={[styles.errorText, { color: '#ff3b30' }]}>
                                 {error}
                             </ThemedText>
-                             {/* Retry button to re-mount screen and trigger snapshot again */}
+                            {/* Retry button to re-mount screen and trigger snapshot again */}
                             <TouchableOpacity
                                 onPress={() => router.replace('/(tabs)/tasksScreen')}
                                 style={[
