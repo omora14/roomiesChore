@@ -72,18 +72,27 @@ export default function TaskList({ tasks, textColors }: TaskListProps) {
   const [taskAssignee, setTaskAssignee] = useState("");
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskPriority, setTaskPriority] = useState("");
+  const [refresh, setRefresh] = useState(false);
 
   async function toggleCompletion(task: Task) {
+    console.log('toggle function launched')
     try {
       const docRef = doc(db, 'tasks', task.id);
+      console.log(docRef);
       const document = await getDoc(docRef);
+      console.log(document);
       const data = document.data();
+      console.log(data);
 
       // Make sure there is data before trying to change it
       if (!data) return;
 
       // Change is_done to whatever it isn't currently
       await updateDoc(docRef, { is_done: !data.is_done });
+
+      task.is_done = !task.is_done;
+      setRefresh(r => !r);
+  
     } catch (error) {
       console.error('Error toggling task completion:', error);
     }
@@ -190,6 +199,7 @@ export default function TaskList({ tasks, textColors }: TaskListProps) {
       <FlatList
         data={tasks}
         renderItem={renderTaskItem}
+        extraData={refresh}
         contentContainerStyle={styles.listContainer}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         keyExtractor={(item) => item.id.toString()}
