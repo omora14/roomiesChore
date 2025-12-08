@@ -1,5 +1,5 @@
 import { db } from '@/database/firebase';
-import { doc, DocumentReference, getDoc, serverTimestamp, setDoc, Timestamp } from 'firebase/firestore';
+import { addDoc, arrayUnion, collection, doc, DocumentReference, getDoc, serverTimestamp, setDoc, Timestamp, updateDoc } from 'firebase/firestore';
 
 /**
  * TypeScript interfaces for type safety
@@ -33,6 +33,7 @@ interface TaskData {
   is_done: boolean;
   createdAt: Timestamp;
   updatedAt: Timestamp;
+  priority: string;
 }
 
 /**
@@ -167,6 +168,7 @@ export const getUpcomingTasksScalable = async (userId: string) => {
             is_done: data.is_done,
             createdAt: data.createdAt?.toDate(), // Convert Timestamp to Date
             updatedAt: data.updatedAt?.toDate(), // Convert Timestamp to Date
+            priority: data.priority || 'None',
           };
         }
       }
@@ -208,6 +210,126 @@ export const createUserDocument = async (userId: string, userData: { email: stri
     console.log('User document created successfully');
   } catch (error) {
     console.error('Error creating user document:', error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches members of a specific group
+ * @param groupId - The unique group ID
+ * @returns Array of member objects with id, firstName, and lastName
+ */
+export const getGroupMembers = async (groupId: string) => {
+  try {
+    console.log('Fetching members for group:', groupId);
+    
+    // Get group document
+    const groupDocRef = doc(db, 'groups', groupId);
+    const groupDoc = await getDoc(groupDocRef);
+    
+    if (!groupDoc.exists()) {
+      console.log('Group not found');
+      return [];
+    }
+    
+    const groupData = groupDoc.data() as GroupData;
+    const memberRefs = groupData.group_members;
+    
+    if (!memberRefs || memberRefs.length === 0) {
+      console.log('No members in this group');
+      return [];
+    }
+    
+    // Fetch each member's user document
+    const memberPromises = memberRefs.map(async (memberRef: DocumentReference) => {
+      const memberDoc = await getDoc(memberRef);
+      
+      if (memberDoc.exists()) {
+        const userData = memberDoc.data() as UserData;
+        return {
+          id: memberDoc.id,
+          name: `${userData.firstName} ${userData.lastName}`, // Display as "First Last"
+          firstName: userData.firstName,
+          lastName: userData.lastName,
+        };
+      }
+      return null;
+    });
+    
+    const members = (await Promise.all(memberPromises)).filter(member => member !== null);
+    console.log('Group members:', members);
+    
+    return members;
+    
+  } catch (error) {
+    console.error('Error fetching group members:', error);
+    return [];
+  }
+};
+
+/**
+ * Creates a new task in Firestore and updates user documents
+ * @param taskData - Object containing all task information
+ * @returns The ID of the created task
+ */
+export const createTask = async (taskData: {
+  description: string;
+  creator: string;
+  assignees: string[];
+  group: string;
+  due_date: string;
+  priority?: string;
+}) => {
+  try {
+    console.log('Creating task with data:', taskData);
+    
+    // Convert string IDs to DocumentReferences
+    const creatorRef = doc(db, 'users', taskData.creator);
+    const assigneeRefs = taskData.assignees.map(id => doc(db, 'users', id));
+    const groupRef = doc(db, 'groups', taskData.group);
+    
+    // Convert date string to Timestamp
+    const dueDate = taskData.due_date 
+      ? Timestamp.fromDate(new Date(taskData.due_date))
+      : null;
+    
+    // Create task document
+    const taskDocRef = await addDoc(collection(db, 'tasks'), {
+      description: taskData.description,
+      creator: creatorRef,
+      assignees: assigneeRefs,
+      group: groupRef,
+      due_date: dueDate,
+      is_done: false,
+      priority: taskData.priority || null,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    
+    console.log('Task created with ID:', taskDocRef.id);
+    
+    // Update assignee's assigned_tasks array - STORE REFERENCE, NOT STRING
+    for (const assigneeId of taskData.assignees) {
+      const assigneeDocRef = doc(db, 'users', assigneeId);
+      const taskReference = doc(db, 'tasks', taskDocRef.id); // Create reference
+      await updateDoc(assigneeDocRef, {
+        assigned_tasks: arrayUnion(taskReference) // Store reference instead of ID
+      });
+    }
+    
+    // Update creator's created_tasks array - STORE REFERENCE, NOT STRING
+    const creatorDocRef = doc(db, 'users', taskData.creator);
+    const taskReference = doc(db, 'tasks', taskDocRef.id); // Create reference
+    await updateDoc(creatorDocRef, {
+      created_tasks: arrayUnion(taskReference) // Store reference instead of ID
+    });
+    
+    console.log('User documents updated successfully');
+    
+    return taskDocRef.id;
+    
+  } catch (error) {
+    console.error('Error creating task:', error);
     throw error;
   }
 };

@@ -5,8 +5,8 @@
 
 import { Platform } from 'react-native';
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+const tintColorLight = '#006EE9'; // Matches logo blue
+const tintColorDark = '#6887F2'; // Lighter blue for dark mode
 
 export const Colors = {
   light: {

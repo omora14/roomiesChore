@@ -1,41 +1,108 @@
-import { useRouter } from "expo-router"; // Added for navigation
-import React, { useState } from "react";
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { getCurrentUserId } from "@/services/auth";
+import { createTask, getGroupMembers, getUserGroupsScalable } from "@/services/database";
+
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Alert,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+// Interface for creating a new task
+interface CreateTaskData {
+  description: string;
+  creator: string;
+  assignees: string[];
+  group: string;
+  due_date: string;
+  is_done: boolean;
+  priority?: string;
+}
+
 export default function AddTaskScreen() {
-  const router = useRouter(); // Navigation hook
+  const router = useRouter();
+  const { theme } = useTheme();
+  const backgroundColor = useThemeColor({}, "background");
+  const textColor = useThemeColor({}, "text");
+  const tintColor = useThemeColor({}, "tint");
+  const isDark = theme === "dark";
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [assigneeId, setAssignee] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("");
-  
-  const groupOptions = [
-    { id: "group1", name: "Apartment 67" },
-    { id: "group2", name: "Apartement 20" },
-    { id: "group3", name: "Apartment 45" },
-  ];
+  const [submitting, setSubmitting] = useState(false);
+
+  const [groupOptions, setGroupOptions] = useState<{ id: string; name: string; color?: string }[]>([]);
+  const [assigneOptions, setAssigneOptions] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const [groupId, setGroupId] = useState("");
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
+  const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
 
-  // Validation states
   const [errors, setErrors] = useState({
     title: "",
     assigneeId: "",
     groupId: "",
   });
+
+  const [groupsError, setGroupsError] = useState<string | null>(null);
+  const [membersLoading, setMembersLoading] = useState(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
+
+  // Load groups
+  useEffect(() => {
+    const loadUserGroups = async () => {
+      try {
+        setLoading(true);
+        const currentUserId = await getCurrentUserId();
+        const userGroups = await getUserGroupsScalable(currentUserId);
+        setGroupOptions(userGroups);
+      } catch (error) {
+        console.error("Error loading groups:", error);
+        Alert.alert("Error", "Failed to load groups");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadUserGroups();
+  }, []);
+
+  // Load members when group changes
+  const handleGroupSelection = async (selectedGroupId: string) => {
+    setGroupId(selectedGroupId);
+    setShowGroupDropdown(false);
+
+    setMembersLoading(true);
+    setMembersError(null);
+
+    try {
+      const members = await getGroupMembers(selectedGroupId);
+      setAssigneOptions(members);
+      setAssignee("");
+    } catch (error) {
+      console.error("Error loading group members:", error);
+      setMembersError("Failed to load group members.");
+      Alert.alert("Error", "Failed to load group members");
+    } finally {
+      setMembersLoading(false);
+    }
+  };
 
   // Auto-format YYYY-MM-DD
   const formatDate = (text: string) => {
@@ -57,7 +124,7 @@ export default function AddTaskScreen() {
   };
 
   // Handle Add Task
-  const handleAddTask = () => {
+  const handleAddTask = async () => {
     let newErrors = { title: "", assigneeId: "", groupId: "" };
     let hasError = false;
 
@@ -75,228 +142,397 @@ export default function AddTaskScreen() {
     }
 
     setErrors(newErrors);
-
     if (hasError) return;
 
-    console.log("New Task:", {
-      title,
-      description,
-      assigneeId,
-      groupId,
-      dueDate,
-      priority,
-    });
+    setSubmitting(true);
+    try {
+      const currentUserId = await getCurrentUserId();
 
-    Alert.alert("Success", "Task created successfully!");
+      const taskId = await createTask({
+        description: title,
+        creator: currentUserId,
+        assignees: [assigneeId],
+        group: groupId,
+        due_date: dueDate,
+        priority: priority,
+      });
 
-    // Navigate back to Tasks tab
-    setTimeout(() => {
-      router.replace("/(tabs)/tasksScreen");
-    }, 500);
+      console.log("Task created:", taskId);
+      Alert.alert("Success", "Task created successfully!");
+
+      setTimeout(() => {
+        router.replace("/(tabs)/tasksScreen");
+      }, 500);
+    } catch (error) {
+      console.error("Error creating task:", error);
+      Alert.alert("Error", "Failed to create task. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: "white" }}>
-      <View style={styles.headerContainer}>
-        <Text style={styles.headerTitle}>Create Task</Text>
-      </View>
+    <ThemedView style={styles.container}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
+        
+        <View style={styles.headerContainer}>
+          <ThemedText style={styles.headerTitle}>Create Task</ThemedText>
+        </View>
 
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.sectionTitle}>Task Details</Text>
-
-        <View style={styles.card}>
-          {/* TITLE */}
-          <Text style={styles.label}>Task Title *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Take out the trash"
-            value={title}
-            onChangeText={setTitle}
-          />
-          {errors.title ? (
-            <Text style={styles.errorText}>{errors.title}</Text>
-          ) : null}
-
-          {/* DESCRIPTION */}
-          <Text style={styles.label}>Description</Text>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Add more details..."
-            value={description}
-            onChangeText={setDescription}
-            multiline
-          />
-
-          {/* ASSIGNEE */}
-          <Text style={styles.label}>Assignee *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. Bob"
-            value={assigneeId}
-            onChangeText={setAssignee}
-          />
-          {errors.assigneeId ? (
-            <Text style={styles.errorText}>{errors.assigneeId}</Text>
-          ) : null}
-
-          {/* GROUP DROPDOWN */}
-          <Text style={styles.label}>Group *</Text>
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setShowGroupDropdown(!showGroupDropdown)}
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+                  <View
+                    style={[
+                      styles.card,
+                      { backgroundColor: isDark ? "#2a2a2a" : "#fafafa" },
+                    ]}
           >
-            <Text>
-              {groupId
-                ? groupOptions.find((g) => g.id === groupId)?.name
-                : "Select a group"}
-            </Text>
-          </TouchableOpacity>
+            {/* TITLE */}
+            <ThemedText style={styles.label}>Task Title *</ThemedText>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  borderColor: errors.title ? "#ff3b30" : isDark ? "#444" : "#000",
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                  color: textColor,
+                },
+              ]}
+              placeholder="e.g. Take out the trash"
+              placeholderTextColor={isDark ? "#666" : "#999"}
+              value={title}
+              onChangeText={setTitle}
+            />
+            {errors.title ? <ThemedText style={styles.errorText}>{errors.title}</ThemedText> : null}
 
-          {errors.groupId ? (
-            <Text style={styles.errorText}>{errors.groupId}</Text>
-          ) : null}
+            {/* DESCRIPTION */}
+            <ThemedText style={styles.label}>Description</ThemedText>
+            <TextInput
+              style={[
+                styles.input,
+                styles.textArea,
+                {
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                  color: textColor,
+                  borderColor: isDark ? "#444" : "#000",
+                },
+              ]}
+              placeholder="Add more details..."
+              placeholderTextColor={isDark ? "#666" : "#999"}
+              value={description}
+              onChangeText={setDescription}
+              multiline
+            />
 
-          {showGroupDropdown && (
-            <View style={styles.dropdown}>
-              {groupOptions.map((g) => (
-                <TouchableOpacity
-                  key={g.id}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setGroupId(g.id);
-                    setShowGroupDropdown(false);
-                  }}
-                >
-                  <Text>{g.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
+            {/* GROUP */}
+            <ThemedText style={styles.label}>Group *</ThemedText>
+            <TouchableOpacity
+              style={[
+                styles.input,
+                styles.dropdownButton,
+                {
+                  borderColor: errors.groupId ? "#ff3b30" : isDark ? "#444" : "#000",
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                },
+              ]}
+              onPress={() => setShowGroupDropdown(!showGroupDropdown)}
+              disabled={loading}
+            >
+              <ThemedText style={{ color: loading ? (isDark ? "#666" : "#999") : textColor }}>
+                {loading
+                  ? "Loading groups..."
+                  : groupId
+                  ? groupOptions.find((g) => g.id === groupId)?.name
+                  : "Select a group"}
+              </ThemedText>
 
-          {/* DUE DATE */}
-          <Text style={styles.label}>Due Date</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="YYYY-MM-DD"
-            value={dueDate}
-            onChangeText={(text) => setDueDate(formatDate(text))}
-            maxLength={10}
-            keyboardType="numeric"
-          />
+              <MaterialIcons
+                name={showGroupDropdown ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                size={20}
+                color={isDark ? "#666" : "#999"}
+              />
+            </TouchableOpacity>
 
-          {/* PRIORITY DROPDOWN */}
-          <Text style={styles.label}>Priority</Text>
+            {errors.groupId ? <ThemedText style={styles.errorText}>{errors.groupId}</ThemedText> : null}
 
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setShowPriorityDropdown(!showPriorityDropdown)}
-          >
-            <Text>{priority ? priority : "Select Priority"}</Text>
-          </TouchableOpacity>
-
-          {showPriorityDropdown && (
-            <View style={styles.dropdown}>
-              {["Low", "Medium", "High"].map((level) => (
-                <TouchableOpacity
-                  key={level}
-                  style={styles.dropdownItem}
-                  onPress={() => {
-                    setPriority(level);
-                    setShowPriorityDropdown(false);
-                  }}
-                >
-                  <Text>{level}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {showGroupDropdown && (
+              <View
+                style={[
+                  styles.dropdown,
+                  { backgroundColor: isDark ? "#1a1a1a" : "white", borderColor: isDark ? "#444" : "#ccc" },
+                ]}
+              >
+                {groupOptions.map((g) => (
+                  <TouchableOpacity
+                    key={g.id}
+                    style={[
+                      styles.dropdownItem,
+                      { borderBottomColor: isDark ? "#333" : "#eee" },
+                    ]}
+                    onPress={() => handleGroupSelection(g.id)}
+                  >
+                    <ThemedText>{g.name}</ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </View>
             )}
-            </View>
-            
-        {/* BUTTON */}
-        <TouchableOpacity
-          style={[styles.button, { backgroundColor: "#0A7EA4" }]}
-          onPress={handleAddTask}
-        >
-          <Text style={styles.buttonText}>Add Task</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+
+            {/* ASSIGNEE */}
+            <ThemedText style={styles.label}>Assignee *</ThemedText>
+            <TouchableOpacity
+              style={[
+                styles.input,
+                styles.dropdownButton,
+                {
+                  borderColor: errors.assigneeId ? "#ff3b30" : isDark ? "#444" : "#000",
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                  opacity: !groupId || assigneOptions.length === 0 ? 0.5 : 1,
+                },
+              ]}
+              onPress={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
+              disabled={!groupId || assigneOptions.length === 0}
+            >
+              <ThemedText
+                style={{
+                  color:
+                    !groupId || assigneOptions.length === 0
+                      ? isDark ? "#666" : "#999"
+                      : textColor,
+                }}
+              >
+                {!groupId
+                  ? "Select a group first"
+                  : assigneeId
+                  ? assigneOptions.find((a) => a.id === assigneeId)?.name
+                  : assigneOptions.length === 0
+                  ? "No members in this group"
+                  : "Select an assignee"}
+              </ThemedText>
+
+              <MaterialIcons
+                name={showAssigneeDropdown ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                size={20}
+                color={isDark ? "#666" : "#999"}
+              />
+            </TouchableOpacity>
+
+            {errors.assigneeId ? <ThemedText style={styles.errorText}>{errors.assigneeId}</ThemedText> : null}
+
+            {showAssigneeDropdown && (
+              <View
+                style={[
+                  styles.dropdown,
+                  { backgroundColor: isDark ? "#1a1a1a" : "white", borderColor: isDark ? "#444" : "#ccc" },
+                ]}
+              >
+                {assigneOptions.map((a) => (
+                  <TouchableOpacity
+                    key={a.id}
+                    style={[
+                      styles.dropdownItem,
+                      { borderBottomColor: isDark ? "#333" : "#eee" },
+                    ]}
+                    onPress={() => {
+                      setAssignee(a.id);
+                      setShowAssigneeDropdown(false);
+                    }}
+                  >
+                    <ThemedText>{a.name}</ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* DUE DATE */}
+            <ThemedText style={styles.label}>Due Date</ThemedText>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                  color: textColor,
+                  borderColor: isDark ? "#444" : "#000",
+                },
+              ]}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={isDark ? "#666" : "#999"}
+              value={dueDate}
+              onChangeText={(text) => setDueDate(formatDate(text))}
+              maxLength={10}
+              keyboardType="numeric"
+            />
+
+            {/* PRIORITY */}
+            <ThemedText style={styles.label}>Priority</ThemedText>
+            <TouchableOpacity
+              style={[
+                styles.input,
+                styles.dropdownButton,
+                {
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                  borderColor: isDark ? "#444" : "#000",
+                },
+              ]}
+              onPress={() => setShowPriorityDropdown(!showPriorityDropdown)}
+            >
+              <ThemedText style={{ color: priority ? textColor : isDark ? "#666" : "#999" }}>
+                {priority ? priority : "Select Priority"}
+              </ThemedText>
+
+              <MaterialIcons
+                name={showPriorityDropdown ? "keyboard-arrow-up" : "keyboard-arrow-down"}
+                size={20}
+                color={isDark ? "#666" : "#999"}
+              />
+            </TouchableOpacity>
+
+            {showPriorityDropdown && (
+              <View
+                style={[
+                  styles.dropdown,
+                  { backgroundColor: isDark ? "#1a1a1a" : "white", borderColor: isDark ? "#444" : "#ccc" },
+                ]}
+              >
+                {["Low", "Medium", "High"].map((level) => (
+                  <TouchableOpacity
+                    key={level}
+                    style={[
+                      styles.dropdownItem,
+                      { borderBottomColor: isDark ? "#333" : "#eee" },
+                    ]}
+                    onPress={() => {
+                      setPriority(level);
+                      setShowPriorityDropdown(false);
+                    }}
+                  >
+                    <ThemedText>{level}</ThemedText>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* SUBMIT BUTTON */}
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: tintColor }, submitting && styles.buttonDisabled]}
+            onPress={handleAddTask}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <>
+                <MaterialIcons name="add-task" size={20} color="white" />
+                <ThemedText style={styles.buttonText}>Add Task</ThemedText>
+              </>
+            )}
+          </TouchableOpacity>
+        </ScrollView>
+      </SafeAreaView>
+    </ThemedView>
   );
 }
 
 /* STYLES */
 const styles = StyleSheet.create({
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
+
   headerContainer: {
-    paddingVertical: 15,
-    backgroundColor: "white",
-    borderBottomColor: "#e5e5e5",
-    borderBottomWidth: 1,
+    paddingVertical: 20,
     alignItems: "center",
+    borderBottomWidth: 1,
+    borderColor: "#ccc",
+    marginHorizontal: 20,
+    alignSelf: "stretch",
   },
+
   headerTitle: {
-    fontSize: 22,
+    fontSize: 28,
     fontWeight: "700",
+    textAlign: "center",
   },
-  container: {
-    padding: 20,
-    paddingBottom: 80,
+
+  scrollContent: {
+    paddingBottom: 30,
+    paddingHorizontal: 20,
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 12,
-  },
+
   card: {
-    backgroundColor: "#fafafa",
-    borderRadius: 12,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#e0e0e0",
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: "#ddd",
+    marginBottom: 20,
+    marginTop: 20,
   },
+
   label: {
-    fontWeight: "600",
     fontSize: 15,
-    marginTop: 16,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 12,
+    fontWeight: "600",
+    marginBottom: 8,
     marginTop: 8,
-    backgroundColor: "white",
   },
+
+  input: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+
   textArea: {
-    height: 90,
-    textAlignVertical: "top",
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 14,
+    height: 100,
+    fontSize: 16,
+    marginBottom: 18,
   },
-  dropdown: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    backgroundColor: "white",
-    marginTop: 4,
-  },
-  dropdownItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
-  },
-  errorText: {
-    color: "red",
-    fontSize: 13,
-    marginTop: 4,
-  },
-  button: {
-    backgroundColor: "#0A7EA4",
-    padding: 16,
-    borderRadius: 10,
+
+  dropdownButton: {
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    marginTop: 25,
+    borderWidth: 1.5,
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 18,
   },
+
+  dropdown: {
+    borderWidth: 1.5,
+    borderRadius: 12,
+    marginBottom: 18,
+  },
+
+  dropdownItem: {
+    padding: 14,
+    borderBottomWidth: 1,
+  },
+
+  errorText: {
+    color: "#ff3b30",
+    fontSize: 13,
+    marginTop: -10,
+    marginBottom: 10,
+    marginLeft: 4,
+  },
+
+  button: {
+    padding: 18,
+    borderRadius: 14,
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 8,
+  },
+
   buttonText: {
     color: "white",
     fontWeight: "700",
     fontSize: 16,
   },
+
+  buttonDisabled: { opacity: 0.6 },
 });
