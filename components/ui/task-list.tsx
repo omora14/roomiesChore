@@ -78,11 +78,8 @@ export default function TaskList({ tasks, textColors }: TaskListProps) {
     console.log('toggle function launched')
     try {
       const docRef = doc(db, 'tasks', task.id);
-      console.log(docRef);
       const document = await getDoc(docRef);
-      console.log(document);
       const data = document.data();
-      console.log(data);
 
       // Make sure there is data before trying to change it
       if (!data) return;
@@ -90,6 +87,7 @@ export default function TaskList({ tasks, textColors }: TaskListProps) {
       // Change is_done to whatever it isn't currently
       await updateDoc(docRef, { is_done: !data.is_done });
 
+      // Update ui and refresh page so it re-renders correctly.
       task.is_done = !task.is_done;
       setRefresh(r => !r);
   
