@@ -138,58 +138,54 @@ roomiesChore/
 ## Team Communication
 
 ### Communication Channels
-- **Primary**: [Specify communication platform - e.g., Slack, Discord, Teams]
+- **Primary**: Teams
 - **Version Control**: GitHub
-- **Project Management**: [Specify tool - e.g., Trello, Jira, GitHub Projects]
+- **Project Management**: GitHub Projects
 
 ### Meeting Schedule
-- **Team Meetings**: [Specify frequency - e.g., Weekly on Tuesdays at 6 PM]
-- **Individual Work**: [Specify hours per week]
-- **Code Reviews**: [Specify process]
-
-*Note: Please update with actual team communication details*
+- **Team Meetings**: Monday, Wednesday, and Friday
+- **Individual Work**: Set by collaborator
+- **Code Reviews**: Pull Requests
 
 ## Team Responsibilities
 
 ### Team 1: User Management
-- **Person A - Authentication Frontend Specialist**
+- **Owen, and John - Authentication Frontend Specialist**
   - User login/register screens
   - User profile management
   - UI components for authentication
   
-- **Person B - Authentication Backend Specialist**
+- **Owen, and John - Authentication Backend Specialist**
   - Firebase Auth integration
   - Group member management
   - Security & session handling
   - API connections
 
 ### Team 2: Core Features
-- **Person C - Chore Management Specialist**
+- **Sophie, and John - Chore Management Specialist**
   - Create/edit/delete chores
   - Chore categories and tags
   - Due dates and scheduling
   - Chore assignment system
 
-- **Person D - Task Tracking Specialist**
+- **Sophie, John, Chelsea, and Rose - Task Tracking Specialist**
   - Mark tasks complete/incomplete
   - Progress tracking dashboard
   - Task history logging
   - Notification system
 
 ### Team 3: UI & Sync
-- **Person E - UI/UX Design Specialist**
+- **Owen, Jose, and Chelsea - UI/UX Design Specialist**
   - App theme and styling system
   - Dark/light mode toggle
   - Responsive layouts
   - Animations and transitions
 
-- **Person F - Real-time Sync Specialist**
+- **John, and Sophie - Real-time Sync Specialist**
   - Firebase Firestore setup
   - Real-time data synchronization
   - Offline functionality
   - Conflict resolution
-
-*Note: Please update with actual team member names and specific responsibilities*
 
 ## Reflections
 
@@ -266,7 +262,7 @@ Before you begin, ensure you have the following installed:
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone <https://github.com/omora14/roomiesChore.git>
 cd roomiesChore
 ```
 
