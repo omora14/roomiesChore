@@ -100,7 +100,7 @@ export default function TasksScreen() {
                                     assignees: data.assignees,
                                     group: data.group,
                                     due_date: data.due_date,
-                                    is_done: data.is_done,
+                                    is_done: data.is_done ?? false,
                                     createdAt: data.createdAt,
                                     updatedAt: data.updatedAt,
                                     priority: data.priority
