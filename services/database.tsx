@@ -222,28 +222,28 @@ export const createUserDocument = async (userId: string, userData: { email: stri
 export const getGroupMembers = async (groupId: string) => {
   try {
     console.log('Fetching members for group:', groupId);
-    
+
     // Get group document
     const groupDocRef = doc(db, 'groups', groupId);
     const groupDoc = await getDoc(groupDocRef);
-    
+
     if (!groupDoc.exists()) {
       console.log('Group not found');
       return [];
     }
-    
+
     const groupData = groupDoc.data() as GroupData;
     const memberRefs = groupData.group_members;
-    
+
     if (!memberRefs || memberRefs.length === 0) {
       console.log('No members in this group');
       return [];
     }
-    
+
     // Fetch each member's user document
     const memberPromises = memberRefs.map(async (memberRef: DocumentReference) => {
       const memberDoc = await getDoc(memberRef);
-      
+
       if (memberDoc.exists()) {
         const userData = memberDoc.data() as UserData;
         return {
@@ -255,12 +255,12 @@ export const getGroupMembers = async (groupId: string) => {
       }
       return null;
     });
-    
+
     const members = (await Promise.all(memberPromises)).filter(member => member !== null);
     console.log('Group members:', members);
-    
+
     return members;
-    
+
   } catch (error) {
     console.error('Error fetching group members:', error);
     return [];
@@ -282,17 +282,17 @@ export const createTask = async (taskData: {
 }) => {
   try {
     console.log('Creating task with data:', taskData);
-    
+
     // Convert string IDs to DocumentReferences
     const creatorRef = doc(db, 'users', taskData.creator);
     const assigneeRefs = taskData.assignees.map(id => doc(db, 'users', id));
     const groupRef = doc(db, 'groups', taskData.group);
-    
+
     // Convert date string to Timestamp
-    const dueDate = taskData.due_date 
+    const dueDate = taskData.due_date
       ? Timestamp.fromDate(new Date(taskData.due_date))
       : null;
-    
+
     // Create task document
     const taskDocRef = await addDoc(collection(db, 'tasks'), {
       description: taskData.description,
@@ -305,9 +305,9 @@ export const createTask = async (taskData: {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
-    
+
     console.log('Task created with ID:', taskDocRef.id);
-    
+
     // Update assignee's assigned_tasks array - STORE REFERENCE, NOT STRING
     for (const assigneeId of taskData.assignees) {
       const assigneeDocRef = doc(db, 'users', assigneeId);
@@ -316,20 +316,152 @@ export const createTask = async (taskData: {
         assigned_tasks: arrayUnion(taskReference) // Store reference instead of ID
       });
     }
-    
+
     // Update creator's created_tasks array - STORE REFERENCE, NOT STRING
     const creatorDocRef = doc(db, 'users', taskData.creator);
     const taskReference = doc(db, 'tasks', taskDocRef.id); // Create reference
     await updateDoc(creatorDocRef, {
       created_tasks: arrayUnion(taskReference) // Store reference instead of ID
     });
-    
+
     console.log('User documents updated successfully');
-    
+
     return taskDocRef.id;
-    
+
   } catch (error) {
     console.error('Error creating task:', error);
     throw error;
   }
+};
+
+/**
+ * Resolves a user DocumentReference to user data with display name
+ * @param userRef - DocumentReference or string ID of the user
+ * @returns User object with id, firstName, lastName, email, and name
+ */
+export const resolveUserData = async (userRef: DocumentReference | string) => {
+  try {
+    const userDoc = typeof userRef === 'string'
+      ? await getDoc(doc(db, 'users', userRef))
+      : await getDoc(userRef);
+
+    if (userDoc.exists()) {
+      const userData = userDoc.data() as UserData;
+      const fullName = `${userData.firstName || ''} ${userData.lastName || ''}`.trim();
+      return {
+        id: userDoc.id,
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        email: userData.email || '',
+        username: userData.username || '',
+        name: fullName || userData.email || 'Unknown User'
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error resolving user data:', error);
+    return null;
+  }
+};
+
+/**
+ * Resolves a group DocumentReference to group data with display name
+ * @param groupRef - DocumentReference or string ID of the group
+ * @returns Group object with id, name, group_name, and color
+ */
+export const resolveGroupData = async (groupRef: DocumentReference | string) => {
+  try {
+    const groupDoc = typeof groupRef === 'string'
+      ? await getDoc(doc(db, 'groups', groupRef))
+      : await getDoc(groupRef);
+
+    if (groupDoc.exists()) {
+      const data = groupDoc.data() as GroupData;
+      const groupName = data.group_name || 'Uncategorized';
+      return {
+        id: groupDoc.id,
+        name: groupName,
+        group_name: groupName,
+        color: data.color || ''
+      };
+    }
+    return { id: typeof groupRef === 'string' ? groupRef : 'unknown', name: 'Uncategorized', group_name: 'Uncategorized', color: '' };
+  } catch (error) {
+    console.error('Error resolving group data:', error);
+    return { id: typeof groupRef === 'string' ? groupRef : 'unknown', name: 'Uncategorized', group_name: 'Uncategorized', color: '' };
+  }
+};
+
+/**
+ * Resolves a task with all user and group data populated
+ * @param taskData - Raw task data from Firestore with DocumentReferences
+ * @returns Task object with resolved user and group data
+ */
+export const resolveTaskData = async (taskData: {
+  id: string;
+  description?: string;
+  creator?: DocumentReference | string;
+  assignees?: (DocumentReference | string)[];
+  group?: DocumentReference | string;
+  due_date?: any;
+  is_done?: boolean;
+  createdAt?: any;
+  updatedAt?: any;
+  priority?: any;
+}) => {
+  // Resolve assignees
+  let assignees: Array<{ id: string; name: string; firstName: string; lastName: string; email: string }> = [];
+  if (taskData.assignees && Array.isArray(taskData.assignees) && taskData.assignees.length > 0) {
+    const assigneePromises = taskData.assignees.map(ref => resolveUserData(ref));
+    const assigneeResults = await Promise.all(assigneePromises);
+    assignees = assigneeResults
+      .filter((user): user is NonNullable<typeof user> => user !== null)
+      .map(user => ({
+        id: user.id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        name: user.name
+      }));
+  }
+
+  // Resolve creator
+  let creator = { id: 'unknown', name: 'Unknown', firstName: '', lastName: '', email: '' };
+  if (taskData.creator) {
+    const creatorData = await resolveUserData(taskData.creator);
+    if (creatorData) {
+      creator = {
+        id: creatorData.id,
+        name: creatorData.name,
+        firstName: creatorData.firstName,
+        lastName: creatorData.lastName,
+        email: creatorData.email
+      };
+    }
+  }
+
+  // Resolve group
+  let group = { id: 'uncategorized', name: 'Uncategorized', group_name: 'Uncategorized', color: '' };
+  if (taskData.group) {
+    const fetchedGroup = await resolveGroupData(taskData.group);
+    group = {
+      id: fetchedGroup.id,
+      name: fetchedGroup.group_name,
+      group_name: fetchedGroup.group_name,
+      color: fetchedGroup.color
+    };
+  }
+
+  return {
+    id: taskData.id,
+    description: taskData.description || 'Untitled Task',
+    creator,
+    assignees,
+    group,
+    due_date: taskData.due_date?.toDate?.()?.toISOString() || (taskData.due_date instanceof Date ? taskData.due_date.toISOString() : taskData.due_date || new Date().toISOString()),
+    is_done: taskData.is_done || false,
+    createdAt: taskData.createdAt,
+    updatedAt: taskData.updatedAt,
+    priority: taskData.priority
+  };
 };

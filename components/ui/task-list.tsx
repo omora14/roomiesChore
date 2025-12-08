@@ -46,13 +46,13 @@ type TaskListProps = {
 // Helper function to get display name for a user
 const getUserDisplayName = (user: User | string): string => {
   if (typeof user === 'string') return user;
-  
+
   // Prefer firstName + lastName combination
   if (user.firstName || user.lastName) {
     const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
     if (fullName) return fullName;
   }
-  
+
   // Fallback to name, email, or unknown
   return user.name || user.email || 'Unknown User';
 };
@@ -60,7 +60,7 @@ const getUserDisplayName = (user: User | string): string => {
 // Helper function to get display name for a group
 const getGroupDisplayName = (group: Group | string): string => {
   if (typeof group === 'string') return group;
-  
+
   // Prefer group_name, then name
   return group.group_name || group.name || 'Uncategorized';
 };
@@ -96,7 +96,7 @@ export default function TaskList({ tasks, textColors }: TaskListProps) {
 
   const renderTaskItem = ({ item }: { item: Task }) => {
     const done = !!item.is_done;
-    
+
     // Get assignee names - display as "FirstName LastName"
     const assigneeNames = item.assignees && item.assignees.length > 0
       ? item.assignees.map(a => getUserDisplayName(a)).join(', ')
@@ -104,12 +104,12 @@ export default function TaskList({ tasks, textColors }: TaskListProps) {
 
     // Get group name - display as group_name
     const groupName = item.group ? getGroupDisplayName(item.group) : 'Uncategorized';
-    
+
     // Get creator name
     const creatorName = getUserDisplayName(item.creator);
 
     // Format due date
-    const dueDate = item.due_date 
+    const dueDate = item.due_date
       ? new Date(item.due_date).toLocaleDateString()
       : null;
 
@@ -208,13 +208,13 @@ export default function TaskList({ tasks, textColors }: TaskListProps) {
         <Modal transparent visible={!!selectedTask} onRequestClose={() => setSelectedTask(null)}>
           <TouchableWithoutFeedback onPress={() => setSelectedTask(null)}>
             <View style={styles.modalOverlay}>
-              <TouchableWithoutFeedback onPress={() => {}}>
+              <TouchableWithoutFeedback onPress={() => { }}>
                 <View style={styles.modalContent}>
                   <TaskForm
                     initialTaskData={{
                       description: selectedTask.description,
-                      creator: typeof selectedTask.creator === 'string' 
-                        ? selectedTask.creator 
+                      creator: typeof selectedTask.creator === 'string'
+                        ? selectedTask.creator
                         : selectedTask.creator.id,
                       assignees: Array.isArray(selectedTask.assignees) && selectedTask.assignees.length > 0
                         ? typeof selectedTask.assignees[0] === 'string'

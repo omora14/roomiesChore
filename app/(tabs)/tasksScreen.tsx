@@ -5,6 +5,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { db } from '@/database/firebase';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { getCurrentUserId } from '@/services/auth';
+import { resolveTaskData } from '@/services/database';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { doc, DocumentReference, getDoc, onSnapshot } from 'firebase/firestore';
@@ -43,60 +44,21 @@ export default function TasksScreen() {
                 setError(null);
 
                 // Get current authenticated user ID
-                const currentUserId = await getCurrentUserId();
-                console.log('Current User ID for Tasks:', currentUserId);
+                let currentUserId;
+                try {
+                    currentUserId = await getCurrentUserId();
+                    console.log('Current User ID for Tasks:', currentUserId);
+                } catch (authError) {
+                    console.log('Authentication error:', authError);
+                    setError('Please sign in to view tasks');
+                    setLoading(false);
+                    // Optionally redirect to login screen
+                    router.replace('/login');
+                    return;
+                }
 
                 // Get user document to access assigned_tasks array
                 const userDocRef = doc(db, 'users', currentUserId);
-
-                // Function to fetch user data
-                const fetchUserData = async (userRef: DocumentReference | string) => {
-                    try {
-                        const userDoc = typeof userRef === 'string'
-                            ? await getDoc(doc(db, 'users', userRef))
-                            : await getDoc(userRef);
-                        if (userDoc.exists()) {
-                            const userData = userDoc.data();
-                            return {
-                                id: userDoc.id,
-                                firstName: userData.firstName || '',
-                                lastName: userData.lastName || '',
-                                email: userData.email || '',
-                                username: userData.username || '',
-                                name: `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || userData.email || 'Unknown User',
-                                ...userData
-                            };
-                        }
-                        return null;
-                    } catch (error) {
-                        console.error('Error fetching user data:', error);
-                        return null;
-                    }
-                };
-
-                // Function to fetch group data
-                const fetchGroupData = async (groupRef: DocumentReference | string) => {
-                    try {
-                        const groupDoc = typeof groupRef === 'string'
-                            ? await getDoc(doc(db, 'groups', groupRef))
-                            : await getDoc(groupRef);
-                        if (groupDoc.exists()) {
-                            const data = groupDoc.data();
-                            const groupName = data.group_name || 'Uncategorized';
-                            return {
-                                id: groupDoc.id,
-                                name: groupName,
-                                group_name: groupName,
-                                color: data.color || '',
-                                ...data
-                            };
-                        }
-                        return { id: typeof groupRef === 'string' ? groupRef : 'unknown', name: 'Uncategorized', group_name: 'Uncategorized' };
-                    } catch (error) {
-                        console.error('Error fetching group data:', error);
-                        return { id: typeof groupRef === 'string' ? groupRef : 'unknown', name: 'Uncategorized', group_name: 'Uncategorized' };
-                    }
-                };
 
                 // Function to load and resolve tasks
                 const loadAndResolveTasks = async () => {
@@ -119,7 +81,7 @@ export default function TasksScreen() {
                             return;
                         }
 
-                        // Fetch all task documents
+                        // Fetch all task documents and resolve them using shared utility
                         const taskPromises = assignedTaskRefs.map(async (taskRef: DocumentReference | string) => {
                             try {
                                 const taskDoc = typeof taskRef === 'string'
@@ -131,65 +93,20 @@ export default function TasksScreen() {
                                 }
 
                                 const data = taskDoc.data();
-
-                                // Resolve assignees
-                                let assignees: Array<{ id: string; name: string; firstName: string; lastName: string; email: string;[key: string]: any }> = [];
-                                if (data.assignees && Array.isArray(data.assignees) && data.assignees.length > 0) {
-                                    const assigneePromises = data.assignees.map((assigneeRef: any) =>
-                                        fetchUserData(assigneeRef)
-                                    );
-                                    const assigneeResults = await Promise.all(assigneePromises);
-                                    assignees = assigneeResults
-                                        .filter((user): user is any => user !== null)
-                                        .map(user => ({
-                                            id: user.id,
-                                            firstName: user.firstName || '',
-                                            lastName: user.lastName || '',
-                                            email: user.email || '',
-                                            name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email || 'Unknown User'
-                                        }));
-                                }
-
-                                // Resolve creator
-                                let creator = { id: 'unknown', name: 'Unknown', firstName: '', lastName: '', email: '' };
-                                if (data.creator) {
-                                    const creatorData = await fetchUserData(data.creator);
-                                    if (creatorData) {
-                                        creator = {
-                                            id: creatorData.id,
-                                            name: creatorData.name || `${creatorData.firstName || ''} ${creatorData.lastName || ''}`.trim() || creatorData.email || 'Unknown',
-                                            firstName: creatorData.firstName || '',
-                                            lastName: creatorData.lastName || '',
-                                            email: creatorData.email || ''
-                                        };
-                                    }
-                                }
-
-                                // Resolve group
-                                let group: any = { id: 'uncategorized', name: 'Uncategorized', group_name: 'Uncategorized', color: '' };
-                                if (data.group) {
-                                    const fetchedGroup = await fetchGroupData(data.group);
-                                    group = {
-                                        id: fetchedGroup.id,
-                                        name: fetchedGroup.group_name || fetchedGroup.name || 'Uncategorized',
-                                        group_name: fetchedGroup.group_name || fetchedGroup.name || 'Uncategorized',
-                                        color: (fetchedGroup as any).color || '',
-                                    };
-                                }
-
-                                const task: Task = {
+                                const resolvedTask = await resolveTaskData({
                                     id: taskDoc.id,
-                                    description: data.description || 'Untitled Task',
-                                    creator: creator,
-                                    assignees: assignees,
-                                    group: group,
-                                    due_date: data.due_date?.toDate()?.toISOString() || new Date().toISOString(),
-                                    is_done: data.is_done || false,
+                                    description: data.description,
+                                    creator: data.creator,
+                                    assignees: data.assignees,
+                                    group: data.group,
+                                    due_date: data.due_date,
+                                    is_done: data.is_done,
                                     createdAt: data.createdAt,
                                     updatedAt: data.updatedAt,
                                     priority: data.priority
-                                };
-                                return task;
+                                });
+
+                                return resolvedTask as Task;
                             } catch (error) {
                                 console.error('Error fetching task:', error);
                                 return null;
@@ -238,7 +155,11 @@ export default function TasksScreen() {
                 return () => unsubscribe();
             } catch (error) {
                 console.error('Error loading tasks:', error);
-                setError('Failed to load tasks. Please try again.');
+                if (error instanceof Error) {
+                    setError(error.message || 'Failed to load tasks. Please try again.');
+                } else {
+                    setError('An unexpected error occurred. Please try again.');
+                }
                 setLoading(false);
             }
         };
