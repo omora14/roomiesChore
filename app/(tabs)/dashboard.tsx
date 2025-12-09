@@ -1,15 +1,28 @@
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import GroupCard from '@/components/ui/group-card';
-import TaskList from '@/components/ui/task-list';
-import { useTheme } from '@/contexts/ThemeContext';
-import { useThemeColor } from '@/hooks/use-theme-color';
-import { getCurrentUserId } from '@/services/auth';
-import { getUpcomingTasksScalable, getUserData, getUserGroupsScalable, resolveTaskData } from '@/services/database';
-import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import GroupCard from "@/components/ui/group-card";
+import TaskList from "@/components/ui/task-list";
+import { useTheme } from "@/contexts/ThemeContext";
+import { db } from "@/database/firebase"; // Ensure db is imported
+import { useThemeColor } from "@/hooks/use-theme-color";
+import { getCurrentUserId } from "@/services/auth";
+import {
+  getUpcomingTasksScalable,
+  getUserData,
+  getUserGroupsScalable,
+  resolveTaskData,
+} from "@/services/database";
+import { useFocusEffect, useRouter } from "expo-router";
+import { doc, onSnapshot } from "firebase/firestore"; // Import onSnapshot
+import { useCallback, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 // Interface for task data returned from database
 type Task = {
@@ -34,121 +47,159 @@ export default function DashboardScreen() {
   const isDark = theme === "dark";
 
   // State management for dashboard data
-  const [userId, setUserId] = useState<string>('');
-  const [userFirstName, setUserFirstName] = useState<string>('');
-  const [userLastName, setUserLastName] = useState<string>('');
-  const [groups, setGroups] = useState<{ name: string, color: string, id: string }[]>([]);
+  const [userId, setUserId] = useState<string>("");
+  const [userFirstName, setUserFirstName] = useState<string>("");
+  const [userLastName, setUserLastName] = useState<string>("");
+  const [groups, setGroups] = useState<
+    { name: string; color: string; id: string }[]
+  >([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Track an error for the whole dashboard load
   const [dashboardError, setDashboardError] = useState<string | null>(null);
 
-  // Load dashboard data when component mounts
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
-        setDashboardError(null);
+  // USE FOCUS EFFECT: Runs when the screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      let unsubscribe: (() => void) | undefined;
+      let isActive = true; // Prevents state updates if screen unmounts
 
-        // Step 1: Get current authenticated user ID
-        const currentUserId = await getCurrentUserId();
-        console.log('Current User ID:', currentUserId);
-        setUserId(currentUserId);
+      const loadDashboardData = async () => {
+        try {
+          if (isActive) {
+            setLoading(true);
+            setDashboardError(null);
+          }
 
-        // Step 2: Fetch all user data in parallel for better performance
-        const [userData, groupsData, tasksData] = await Promise.all([
-          getUserData(currentUserId),              // User profile data
-          getUserGroupsScalable(currentUserId),    // User's groups
-          getUpcomingTasksScalable(currentUserId)  // User's incomplete tasks
-        ]);
+          const currentUserId = await getCurrentUserId();
+          if (isActive) setUserId(currentUserId);
 
-        // Debug logging
-        console.log('User Data:', userData);
-        console.log('Groups Data:', groupsData);
-        console.log('Tasks Data:', tasksData);
+          const [userData, groupsData] = await Promise.all([
+            getUserData(currentUserId),
+            getUserGroupsScalable(currentUserId),
+          ]);
 
-        // Step 3: Update state with fetched data
-        setUserFirstName(userData?.firstName || userData?.username || 'User');
-        setUserLastName(userData?.lastName || '');
-        setGroups(groupsData || []);
+          if (isActive) {
+            setUserFirstName(
+              userData?.firstName || userData?.username || "User"
+            );
+            setUserLastName(userData?.lastName || "");
+            setGroups(groupsData || []);
+          }
 
-        // Step 4: Resolve tasks with user and group data using shared utility
-        const resolvedTasks = await Promise.all(
-          (tasksData || []).map(async (task) => {
-            const resolvedTask = await resolveTaskData({
-              id: task.id,
-              description: task.description,
-              creator: task.creator,
-              assignees: task.assignees,
-              group: task.group,
-              due_date: task.due_date,
-              is_done: task.is_done,
-              createdAt: task.createdAt,
-              updatedAt: task.updatedAt,
-              priority: task.priority
-            });
-            return resolvedTask;
-          })
-        );
+          const userDocRef = doc(db, "users", currentUserId);
 
-        setTasks(resolvedTasks);
+          unsubscribe = onSnapshot(
+            userDocRef,
+            async (snapshot) => {
+              if (isActive) {
+                const tasksData = await getUpcomingTasksScalable(currentUserId);
 
-      } catch (error) {
-        console.error('Error loading dashboard:', error);
+                const resolvedTasks = await Promise.all(
+                  (tasksData || []).map(async (task) => {
+                    const resolvedTask = await resolveTaskData({
+                      id: task.id,
+                      description: task.description,
+                      creator: task.creator,
+                      assignees: task.assignees,
+                      group: task.group,
+                      due_date: task.due_date,
+                      is_done: task.is_done,
+                      createdAt: task.createdAt,
+                      updatedAt: task.updatedAt,
+                      priority: task.priority,
+                    });
+                    return resolvedTask;
+                  })
+                );
 
-        // Set a user-facing error message
-        setDashboardError('Failed to load dashboard data.');
+                resolvedTasks.sort((a, b) => {
+                  const dateA = a.due_date
+                    ? new Date(a.due_date).getTime()
+                    : Infinity;
+                  const dateB = b.due_date
+                    ? new Date(b.due_date).getTime()
+                    : Infinity;
+                  return dateA - dateB;
+                });
 
-        // Set fallback values on error
-        setUserFirstName('User');
-        setGroups([]);
-        setTasks([]);
-      } finally {
-        setLoading(false);
-      }
-    };
+                if (isActive) {
+                  setTasks(resolvedTasks as Task[]);
+                  setLoading(false);
+                }
+              }
+            },
+            (error) => {
+              console.error("Snapshot error:", error);
+              if (isActive) setLoading(false);
+            }
+          );
+        } catch (error) {
+          console.error("Error loading dashboard:", error);
+          if (isActive) {
+            setDashboardError("Failed to load dashboard data.");
+            setUserFirstName("User");
+            setGroups([]);
+            setTasks([]);
+            setLoading(false);
+          }
+        }
+      };
 
-    loadDashboardData();
-  }, []);
+      loadDashboardData();
+
+      // Cleanup function when screen loses focus or unmounts
+      return () => {
+        isActive = false;
+        if (unsubscribe) {
+          unsubscribe();
+        }
+      };
+    }, [])
+  );
 
   // Format current date for display
   const currentDate = new Date();
-  const dateString = currentDate.toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
+  const dateString = currentDate.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
   });
 
-  // Show loading screen while fetching data
   if (loading) {
     return (
       <ThemedView style={styles.container}>
         <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={tintColor} />
-            <ThemedText style={styles.loadingText}>Loading dashboard...</ThemedText>
+            <ThemedText style={styles.loadingText}>
+              Loading dashboard...
+            </ThemedText>
           </View>
         </SafeAreaView>
       </ThemedView>
     );
   }
 
-  // Main dashboard render
   return (
-
     <ThemedView style={styles.container}>
       <SafeAreaView style={[styles.safeArea, { backgroundColor }]}>
         <View style={styles.content}>
-          {/* Header section with date and welcome message */}
+          {/* Header section */}
           <View style={styles.header}>
             <ThemedText style={styles.dateText}>{dateString}</ThemedText>
             <ThemedText style={styles.welcomeText}>
-              Welcome{userFirstName ? `, ${userFirstName}${userLastName ? ` ${userLastName}` : ''}` : ''}!
+              Welcome
+              {userFirstName
+                ? `, ${userFirstName}${userLastName ? ` ${userLastName}` : ""}`
+                : ""}
+              !
             </ThemedText>
           </View>
-          <ScrollView>
+
+          <ScrollView showsVerticalScrollIndicator={false}>
             {/* Groups section */}
             <View style={styles.section}>
               <ThemedText style={styles.sectionTitle}>My Groups</ThemedText>
@@ -171,19 +222,25 @@ export default function DashboardScreen() {
                 />
               ) : (
                 <View style={styles.emptyContainer}>
-                  <ThemedText style={styles.emptyText}>No groups yet. Create one to get started!</ThemedText>
+                  <ThemedText style={styles.emptyText}>
+                    No groups yet. Create one to get started!
+                  </ThemedText>
                 </View>
               )}
             </View>
 
             {/* Tasks section */}
             <View style={styles.section}>
-              <ThemedText style={styles.sectionTitle}>Upcoming Tasks</ThemedText>
+              <ThemedText style={styles.sectionTitle}>
+                Upcoming Tasks
+              </ThemedText>
               {tasks.length > 0 ? (
                 <TaskList tasks={tasks} />
               ) : (
                 <View style={styles.emptyContainer}>
-                  <ThemedText style={styles.emptyText}>No upcoming tasks. You're all caught up!</ThemedText>
+                  <ThemedText style={styles.emptyText}>
+                    No upcoming tasks. You're all caught up!
+                  </ThemedText>
                 </View>
               )}
             </View>
@@ -207,8 +264,8 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   loadingText: {
     marginTop: 12,
@@ -225,7 +282,7 @@ const styles = StyleSheet.create({
   },
   welcomeText: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginTop: 4,
   },
   section: {
@@ -233,7 +290,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 16,
   },
   groupsList: {
@@ -241,13 +298,13 @@ const styles = StyleSheet.create({
   },
   emptyContainer: {
     padding: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     minHeight: 100,
   },
   emptyText: {
     fontSize: 15,
     opacity: 0.6,
-    textAlign: 'center',
+    textAlign: "center",
   },
 });
