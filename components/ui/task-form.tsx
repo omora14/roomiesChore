@@ -4,42 +4,46 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { getCurrentUserId } from "@/services/auth";
 import { getGroupMembers, getUserGroupsScalable } from "@/services/database";
-import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { useRouter } from "expo-router";
+import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { DocumentReference } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Alert,
-    GestureResponderEvent,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Interface for task
 interface TaskData {
-  description: string;        // Task title/description
-  creator: string;           // User ID of creator
-  assignees: string[];       // Array of user IDs assigned to task
-  group: string | DocumentReference;         // Group ID where task belongs
-  due_date: string;          // Date in YYYY-MM-DD format (will convert to Timestamp)
-  is_done: boolean;          // Completion status (always false for new tasks)
-  priority: string;         // Optional: Low, Medium, High
+  description: string;
+  creator: string;
+  assignees: string[];
+  group: string | DocumentReference;
+  due_date: string;
+  is_done: boolean;
+  priority: string;
 }
 
 interface TaskFormProps {
-    initialTaskData?: Partial<TaskData>;
-    onSubmit: (data: TaskData) => void;
-    pageHeading?: string;
-    showDeleteButton?: boolean;
+  initialTaskData?: Partial<TaskData>;
+  onSubmit: (data: any) => void;
+  onDelete?: () => void;
+  pageHeading?: string;
+  showDeleteButton?: boolean;
 }
 
-export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showDeleteButton }: TaskFormProps) {
-  const router = useRouter(); // Navigation hook
+export default function TaskForm({
+  initialTaskData,
+  onSubmit,
+  onDelete,
+  pageHeading,
+  showDeleteButton,
+}: TaskFormProps) {
   const { theme } = useTheme();
   const backgroundColor = useThemeColor({}, "background");
   const textColor = useThemeColor({}, "text");
@@ -47,124 +51,155 @@ export default function TaskForm({ initialTaskData, onSubmit, pageHeading, showD
   const isDark = theme === "dark";
 
   const [title, setTitle] = useState(initialTaskData?.description || "");
-  //   const [description, setDescription] = useState(initialTaskData?.description || "");
-  const [assigneeId, setAssignee] = useState(initialTaskData?.assignees?.[0] || "");
-  const [groupMembers, setGroupMembers] = useState([]);
+  const [assigneeId, setAssignee] = useState(
+    initialTaskData?.assignees?.[0] || ""
+  );
 
-  
-  const [dueDate, setDueDate] = useState(initialTaskData?.due_date ? new Date(initialTaskData?.due_date).toISOString().split("T")[0] : "");
+  const formatInitialDate = (date: any) => {
+    if (!date) return "";
+    try {
+      return new Date(date).toISOString().split("T")[0];
+    } catch (e) {
+      return "";
+    }
+  };
+
+  const [dueDate, setDueDate] = useState(
+    formatInitialDate(initialTaskData?.due_date)
+  );
   const [priority, setPriority] = useState(initialTaskData?.priority || "");
   const [submitting, setSubmitting] = useState(false);
-  
-  // Dynamic state for groups and assignees
-  const [groupOptions, setGroupOptions] = useState<{ id: string; name: string; color?: string }[]>([]);
 
-  const [assigneOptions, setAssigneOptions] = useState<{ id: string; name: string }[]>([]);
+  const [groupOptions, setGroupOptions] = useState<
+    { id: string; name: string; color?: string }[]
+  >([]);
+  const [assigneOptions, setAssigneOptions] = useState<
+    { id: string; name: string }[]
+  >([]);
   const [loading, setLoading] = useState(true);
-  
-  const [groupId, setGroupId] = useState(initialTaskData?.group || "");
-  const [selectedGroupId, setSelectedGroupId] = useState(initialTaskData?.group || "");
+
+  const [groupId, setGroupId] = useState("");
   const [showGroupDropdown, setShowGroupDropdown] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const [showPriorityDropdown, setShowPriorityDropdown] = useState(false);
-  
-  // Validation states
+
   const [errors, setErrors] = useState({
     title: "",
     assigneeId: "",
     groupId: "",
   });
 
-  // Load user's groups on component mount
   useEffect(() => {
     const loadUserGroups = async () => {
       try {
         setLoading(true);
         const currentUserId = await getCurrentUserId();
         const userGroups = await getUserGroupsScalable(currentUserId);
-
         setGroupOptions(userGroups);
-        
       } catch (error) {
-        console.error('Error loading groups:', error);
-        Alert.alert('Error', 'Failed to load groups');
+        console.error("Error loading groups:", error);
       } finally {
         setLoading(false);
       }
     };
-
     loadUserGroups();
   }, []);
 
   useEffect(() => {
     if (!initialTaskData?.group) return;
-  
-    let groupId: string;
-  
-    // Change the groupId to a string if it isn't.
-    if (typeof initialTaskData.group !== "string") {
-      groupId = initialTaskData.group.id; 
-    } else {
-      groupId = initialTaskData.group;
-    }
-  
-    setSelectedGroupId(groupId);
-    handleGroupSelection(groupId);
+    let gId =
+      typeof initialTaskData.group === "string"
+        ? initialTaskData.group
+        : (initialTaskData.group as any).id;
+    setGroupId(gId);
+    if (gId) handleGroupSelection(gId);
   }, [initialTaskData]);
 
-// There's only one assignee for each task, so automatically load it.
-useEffect(() => {
-    if (assigneOptions.length > 0 && !assigneeId) {
-      setAssignee(assigneOptions[0].id);
-    }
-  }, [assigneOptions]);
-  
-
-  // Handle group selection and load members
   const handleGroupSelection = async (selectedGroupId: string) => {
     setGroupId(selectedGroupId);
     setShowGroupDropdown(false);
-    
     try {
-      // Fetch members of the selected group
       const members = await getGroupMembers(selectedGroupId);
       setAssigneOptions(members);
-      
-      // Reset assignee since group changed
-
-          setAssignee("");
+      if (initialTaskData?.assignees && initialTaskData.assignees.length > 0) {
+        const initialAssignee = initialTaskData.assignees[0];
+        const assignId =
+          typeof initialAssignee === "string"
+            ? initialAssignee
+            : (initialAssignee as any).id;
+        if (members.find((m) => m.id === assignId)) setAssignee(assignId);
+        else if (members.length > 0 && !assigneeId) setAssignee(members[0].id);
+      } else {
+        setAssignee("");
+      }
     } catch (error) {
-      console.error('Error loading group members:', error);
-      Alert.alert('Error', 'Failed to load group members');
+      console.error("Error loading group members:", error);
     }
   };
 
-  // Auto-format YYYY-MM-DD
   const formatDate = (text: string) => {
     const cleaned = text.replace(/\D/g, "");
-    let formatted = cleaned;
-
-    if (cleaned.length > 4 && cleaned.length <= 6) {
-      formatted = cleaned.slice(0, 4) + "-" + cleaned.slice(4);
-    } else if (cleaned.length > 6) {
-      formatted =
+    if (cleaned.length > 4 && cleaned.length <= 6)
+      return cleaned.slice(0, 4) + "-" + cleaned.slice(4);
+    if (cleaned.length > 6)
+      return (
         cleaned.slice(0, 4) +
         "-" +
         cleaned.slice(4, 6) +
         "-" +
-        cleaned.slice(6, 8);
-    }
-
-    return formatted;
+        cleaned.slice(6, 8)
+      );
+    return cleaned;
   };
 
-    function handleDeleteTask(event: GestureResponderEvent): void {
-        throw new Error("Function not implemented.");
+  const handleEditTask = async () => {
+    let newErrors = { title: "", assigneeId: "", groupId: "" };
+    let hasError = false;
+    if (!title.trim()) {
+      newErrors.title = "Title is required.";
+      hasError = true;
     }
+    if (!groupId.trim()) {
+      newErrors.groupId = "Group is required.";
+      hasError = true;
+    }
+    setErrors(newErrors);
+    if (hasError) return;
 
-    function handleEditTask(event: GestureResponderEvent): void {
-        throw new Error("Function not implemented.");
+    setSubmitting(true);
+    const taskData = {
+      description: title,
+      assignees: assigneeId ? [assigneeId] : [],
+      group: groupId,
+      due_date: dueDate,
+      priority: priority,
+      is_done: initialTaskData?.is_done || false,
+    };
+    await onSubmit(taskData);
+    setSubmitting(false);
+  };
+
+  const handleDeleteTask = () => {
+    if (onDelete) {
+      // Check if we are on the Web
+      if (Platform.OS === "web") {
+        const confirm = window.confirm(
+          "Are you sure you want to delete this task? This cannot be undone."
+        );
+        if (confirm) {
+          onDelete();
+        }
+      } else {
+        // Use Native Alert for iOS/Android
+        Alert.alert("Delete Task", "Are you sure? This cannot be undone.", [
+          { text: "Cancel", style: "cancel" },
+          { text: "Delete", style: "destructive", onPress: () => onDelete() },
+        ]);
+      }
+    } else {
+      console.error("No onDelete function provided");
     }
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -173,144 +208,109 @@ useEffect(() => {
           <ThemedText style={styles.headerTitle}>{pageHeading}</ThemedText>
         </View>
 
-        <ScrollView 
+        <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <ThemedText style={styles.sectionTitle}>Task Details</ThemedText>
-
-          <View style={[
-            styles.card,
-            {
-              backgroundColor: isDark ? '#2a2a2a' : '#fafafa',
-              borderColor: isDark ? '#3a3a3a' : '#e0e0e0',
-            }
-          ]}>
-          {/* TITLE */}
-          <ThemedText style={styles.label}>Task Title *</ThemedText>
-          <TextInput
+          <View
             style={[
-              styles.input,
+              styles.card,
               {
-                backgroundColor: isDark ? '#1a1a1a' : 'white',
-                color: textColor,
-                borderColor: errors.title ? '#ff3b30' : (isDark ? '#444' : '#ccc'),
-              }
+                backgroundColor: isDark ? "#2a2a2a" : "#fafafa",
+                borderColor: isDark ? "#3a3a3a" : "#e0e0e0",
+              },
             ]}
-            placeholder="e.g. Take out the trash"
-            placeholderTextColor={isDark ? '#666' : '#999'}
-            value={title}
-            onChangeText={setTitle}
-          />
-          {errors.title ? (
-            <ThemedText style={styles.errorText}>{errors.title}</ThemedText>
-          ) : null}
-
-          {/* GROUP DROPDOWN */}
-          <ThemedText style={styles.label}>Group *</ThemedText>
-          <TouchableOpacity
-            style={[
-              styles.input,
-              styles.dropdownButton,
-              {
-                backgroundColor: isDark ? '#1a1a1a' : 'white',
-                borderColor: errors.groupId ? '#ff3b30' : (isDark ? '#444' : '#ccc'),
-              }
-            ]}
-            onPress={() => setShowGroupDropdown(!showGroupDropdown)}
-            disabled={loading}
           >
-            <ThemedText style={{ color: loading ? (isDark ? '#666' : '#999') : textColor }}>
-              {loading 
-                ? "Loading groups..."
-                : groupId
-                ? groupOptions.find((g) => g.id === groupId)?.name
-                : "Select a group"}
-            </ThemedText>
-            <MaterialIcons 
-              name={showGroupDropdown ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-              size={20} 
-              color={isDark ? '#666' : '#999'} 
+            <ThemedText style={styles.label}>Task Title *</ThemedText>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                  color: textColor,
+                  borderColor: errors.title
+                    ? "#ff3b30"
+                    : isDark
+                    ? "#444"
+                    : "#ccc",
+                },
+              ]}
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Task title"
+              placeholderTextColor="#999"
             />
-          </TouchableOpacity>
 
-          {errors.groupId ? (
-            <ThemedText style={styles.errorText}>{errors.groupId}</ThemedText>
-          ) : null}
-
-          {showGroupDropdown && (
-            <View style={[
-              styles.dropdown,
-              {
-                backgroundColor: isDark ? '#1a1a1a' : 'white',
-                borderColor: isDark ? '#444' : '#ccc',
-              }
-            ]}>
-              {groupOptions.map((g) => (
+            <ThemedText style={styles.label}>Group *</ThemedText>
+            <TouchableOpacity
+              style={[
+                styles.input,
+                styles.dropdownButton,
+                {
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                  borderColor: errors.groupId
+                    ? "#ff3b30"
+                    : isDark
+                    ? "#444"
+                    : "#ccc",
+                },
+              ]}
+              onPress={() => setShowGroupDropdown(!showGroupDropdown)}
+            >
+              <ThemedText style={{ color: loading ? "#999" : textColor }}>
+                {groupId
+                  ? groupOptions.find((g) => g.id === groupId)?.name
+                  : "Select Group"}
+              </ThemedText>
+              <MaterialIcons
+                name="arrow-drop-down"
+                size={24}
+                color={textColor}
+              />
+            </TouchableOpacity>
+            {showGroupDropdown &&
+              groupOptions.map((g) => (
                 <TouchableOpacity
                   key={g.id}
-                  style={[
-                    styles.dropdownItem,
-                    { borderBottomColor: isDark ? '#333' : '#eee' }
-                  ]}
+                  style={styles.dropdownItem}
                   onPress={() => handleGroupSelection(g.id)}
                 >
                   <ThemedText>{g.name}</ThemedText>
                 </TouchableOpacity>
               ))}
-            </View>
-          )}
 
-          {/* ASSIGNEE DROPDOWN */}
-          <ThemedText style={styles.label}>Assignee *</ThemedText>
-          <TouchableOpacity
-            style={[
-              styles.input,
-              styles.dropdownButton,
-              {
-                backgroundColor: isDark ? '#1a1a1a' : 'white',
-                borderColor: errors.assigneeId ? '#ff3b30' : (isDark ? '#444' : '#ccc'),
-                opacity: (!groupId || assigneOptions.length === 0) ? 0.5 : 1,
-              }
-            ]}
-            onPress={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
-            disabled={!groupId || assigneOptions.length === 0}
-          >
-            <ThemedText style={{ color: (!groupId || assigneOptions.length === 0) ? (isDark ? '#666' : '#999') : textColor }}>
-              {!groupId
-                ? "Select a group first"
-                : assigneeId
-                ? assigneOptions.find((a) => a.id === assigneeId)?.name
-                : assigneOptions.length === 0
-                ? "No members in this group"
-                : "Select an assignee"}
-            </ThemedText>
-            <MaterialIcons 
-              name={showAssigneeDropdown ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-              size={20} 
-              color={isDark ? '#666' : '#999'} 
-            />
-          </TouchableOpacity>
-
-          {errors.assigneeId ? (
-            <ThemedText style={styles.errorText}>{errors.assigneeId}</ThemedText>
-          ) : null}
-
-          {showAssigneeDropdown && (
-            <View style={[
-              styles.dropdown,
-              {
-                backgroundColor: isDark ? '#1a1a1a' : 'white',
-                borderColor: isDark ? '#444' : '#ccc',
-              }
-            ]}>
-              {assigneOptions.map((a) => (
+            <ThemedText style={styles.label}>Assignee</ThemedText>
+            <TouchableOpacity
+              style={[
+                styles.input,
+                styles.dropdownButton,
+                {
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                  borderColor: errors.assigneeId
+                    ? "#ff3b30"
+                    : isDark
+                    ? "#444"
+                    : "#ccc",
+                },
+              ]}
+              onPress={() => setShowAssigneeDropdown(!showAssigneeDropdown)}
+            >
+              <ThemedText style={{ color: textColor }}>
+                {assigneeId
+                  ? assigneOptions.find((a) => a.id === assigneeId)?.name
+                  : "Select Assignee"}
+              </ThemedText>
+              <MaterialIcons
+                name="arrow-drop-down"
+                size={24}
+                color={textColor}
+              />
+            </TouchableOpacity>
+            {showAssigneeDropdown &&
+              assigneOptions.map((a) => (
                 <TouchableOpacity
                   key={a.id}
-                  style={[
-                    styles.dropdownItem,
-                    { borderBottomColor: isDark ? '#333' : '#eee' }
-                  ]}
+                  style={styles.dropdownItem}
                   onPress={() => {
                     setAssignee(a.id);
                     setShowAssigneeDropdown(false);
@@ -319,162 +319,111 @@ useEffect(() => {
                   <ThemedText>{a.name}</ThemedText>
                 </TouchableOpacity>
               ))}
-            </View>
-          )}
 
-          {/* DUE DATE */}
-          <ThemedText style={styles.label}>Due Date</ThemedText>
-          <TextInput
-            style={[
-              styles.input,
-              {
-                backgroundColor: isDark ? '#1a1a1a' : 'white',
-                color: textColor,
-                borderColor: isDark ? '#444' : '#ccc',
-              }
-            ]}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={isDark ? '#666' : '#999'}
-            value={dueDate}
-            onChangeText={(text) => setDueDate(formatDate(text))}
-            maxLength={10}
-            keyboardType="numeric"
-          />
-
-          {/* PRIORITY DROPDOWN */}
-          <ThemedText style={styles.label}>Priority</ThemedText>
-
-          <TouchableOpacity
-            style={[
-              styles.input,
-              styles.dropdownButton,
-              {
-                backgroundColor: isDark ? '#1a1a1a' : 'white',
-                borderColor: isDark ? '#444' : '#ccc',
-              }
-            ]}
-            onPress={() => setShowPriorityDropdown(!showPriorityDropdown)}
-          >
-            <ThemedText style={{ color: priority ? textColor : (isDark ? '#666' : '#999') }}>
-              {priority ? priority : "Select Priority"}
-            </ThemedText>
-            <MaterialIcons 
-              name={showPriorityDropdown ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
-              size={20} 
-              color={isDark ? '#666' : '#999'} 
+            <ThemedText style={styles.label}>Due Date</ThemedText>
+            <TextInput
+              style={[
+                styles.input,
+                {
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                  color: textColor,
+                  borderColor: isDark ? "#444" : "#ccc",
+                },
+              ]}
+              value={dueDate}
+              onChangeText={(t) => setDueDate(formatDate(t))}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor="#999"
+              keyboardType="numeric"
             />
-          </TouchableOpacity>
 
-          {showPriorityDropdown && (
-            <View style={[
-              styles.dropdown,
-              {
-                backgroundColor: isDark ? '#1a1a1a' : 'white',
-                borderColor: isDark ? '#444' : '#ccc',
-              }
-            ]}>
-              {["Low", "Medium", "High"].map((level) => (
+            <ThemedText style={styles.label}>Priority</ThemedText>
+            <TouchableOpacity
+              style={[
+                styles.input,
+                styles.dropdownButton,
+                {
+                  backgroundColor: isDark ? "#1a1a1a" : "white",
+                  borderColor: isDark ? "#444" : "#ccc",
+                },
+              ]}
+              onPress={() => setShowPriorityDropdown(!showPriorityDropdown)}
+            >
+              <ThemedText style={{ color: textColor }}>
+                {priority || "Select Priority"}
+              </ThemedText>
+              <MaterialIcons
+                name="arrow-drop-down"
+                size={24}
+                color={textColor}
+              />
+            </TouchableOpacity>
+            {showPriorityDropdown &&
+              ["Low", "Medium", "High"].map((p) => (
                 <TouchableOpacity
-                  key={level}
-                  style={[
-                    styles.dropdownItem,
-                    { borderBottomColor: isDark ? '#333' : '#eee' }
-                  ]}
+                  key={p}
+                  style={styles.dropdownItem}
                   onPress={() => {
-                    setPriority(level);
+                    setPriority(p);
                     setShowPriorityDropdown(false);
                   }}
                 >
-                  <ThemedText>{level}</ThemedText>
+                  <ThemedText>{p}</ThemedText>
                 </TouchableOpacity>
               ))}
-            </View>
+          </View>
+
+          <TouchableOpacity
+            style={[
+              styles.button,
+              { backgroundColor: tintColor },
+              submitting && styles.buttonDisabled,
+            ]}
+            onPress={handleEditTask}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <>
+                <MaterialIcons name="check" size={20} color="white" />
+                <ThemedText style={styles.buttonText}>Save Changes</ThemedText>
+              </>
             )}
-            </View>
-            
-        {/* BUTTON */}
-        <TouchableOpacity
-          style={[
-            styles.button,
-            { backgroundColor: tintColor },
-            submitting && styles.buttonDisabled
-          ]}
-          onPress={handleEditTask}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <>
-              <MaterialIcons name="check" size={20} color="white" />
-              <ThemedText style={styles.buttonText}>Save Changes</ThemedText>
-            </>
+          </TouchableOpacity>
+
+          {showDeleteButton && (
+            <TouchableOpacity
+              style={[styles.deleteButton, submitting && styles.buttonDisabled]}
+              onPress={handleDeleteTask}
+              disabled={submitting}
+            >
+              <>
+                <MaterialIcons name="delete" size={20} color="white" />
+                <ThemedText style={styles.buttonText}>Delete Task</ThemedText>
+              </>
+            </TouchableOpacity>
           )}
-        </TouchableOpacity>
-        {/* DELETE BUTTON */}
-        <TouchableOpacity
-          style={[
-            styles.deleteButton,
-            submitting && styles.buttonDisabled
-          ]}
-          onPress={handleDeleteTask}
-          disabled={submitting}
-        >
-          {submitting ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <>
-              <MaterialIcons name="delete" size={20} color="white" />
-              <ThemedText style={styles.buttonText}>Delete Task</ThemedText>
-            </>
-          )}
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+      </SafeAreaView>
     </ThemedView>
   );
 }
 
-/* STYLES */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  safeArea: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  safeArea: { flex: 1 },
   headerContainer: {
     paddingVertical: 20,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e5e5",
     alignItems: "center",
+    borderBottomWidth: 1,
+    borderColor: "#e5e5e5",
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "700",
-  },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    marginBottom: 16,
-  },
-  card: {
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1.5,
-    marginBottom: 20,
-  },
-  label: {
-    fontWeight: "600",
-    fontSize: 15,
-    marginTop: 16,
-    marginBottom: 8,
-  },
+  headerTitle: { fontSize: 24, fontWeight: "700" },
+  scrollContent: { padding: 20, paddingBottom: 40 },
+  sectionTitle: { fontSize: 20, fontWeight: "700", marginBottom: 16 },
+  card: { borderRadius: 16, padding: 20, borderWidth: 1.5, marginBottom: 20 },
+  label: { fontWeight: "600", fontSize: 15, marginTop: 16, marginBottom: 8 },
   input: {
     borderWidth: 1.5,
     borderRadius: 12,
@@ -483,13 +432,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   dropdownButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  textArea: {
-    height: 100,
-    textAlignVertical: "top",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   dropdown: {
     borderWidth: 1.5,
@@ -497,23 +442,15 @@ const styles = StyleSheet.create({
     marginTop: 4,
     maxHeight: 200,
   },
-  dropdownItem: {
-    padding: 14,
-    borderBottomWidth: 1,
-  },
-  errorText: {
-    color: "#ff3b30",
-    fontSize: 13,
-    marginTop: 6,
-    marginLeft: 4,
-  },
+  dropdownItem: { padding: 14, borderBottomWidth: 1, borderColor: "#eee" },
+  errorText: { color: "#ff3b30", fontSize: 13, marginTop: 6, marginLeft: 4 },
   button: {
     padding: 18,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 20,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -521,21 +458,15 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: "white",
-    fontWeight: "700",
-    fontSize: 16,
-  },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { color: "white", fontWeight: "700", fontSize: 16 },
   deleteButton: {
     padding: 18,
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 20,
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: 8,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -543,5 +474,5 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 5,
     backgroundColor: "#ff3b30",
-  }
+  },
 });
