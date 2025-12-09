@@ -4,6 +4,7 @@ import TaskList from '@/components/ui/task-list';
 import { useTheme } from '@/contexts/ThemeContext';
 import { auth, db } from '@/database/firebase';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { resolveTaskData } from '@/services/database';
 import { useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { collection, doc, getDoc, onSnapshot, query, where } from 'firebase/firestore';
 import { useCallback, useState } from 'react';
@@ -13,17 +14,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Interface for task data returned from database
 type Task = {
   id: string;
-  // title: string;
   description: string;
   creator: any;
   assignees: any[];
   group: any;
   due_date: any;
   is_done: boolean;
-  createdAt: any;
-  updatedAt: any;
+  createdAt?: any;
+  updatedAt?: any;
   priority?: any;
-}
+};
 
 
 export default function GroupScreen() {
@@ -32,39 +32,40 @@ export default function GroupScreen() {
   const textColor = useThemeColor({}, "text");
   const tintColor = useThemeColor({}, "tint");
   const isDark = theme === "dark";
-  
+
   const [loading, setLoading] = useState(true);
   const [groupName, setGroupName] = useState<string>('Group');
   const [groupTasks, setGroupTasks] = useState<Task[]>([]);
   const [individualTasks, setIndividualTasks] = useState<Task[]>([]);
-  
+
   const { groupId } = useLocalSearchParams();
   const userId = auth.currentUser?.uid
-  
+
   const currentDate: Date = new Date();
-  
+
   const dateString: string = currentDate.toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'short',
     day: 'numeric',
     year: 'numeric',
   });
-  
-  
+
+
   // Change to retrieve group tasks from database.
-  
-  
+
+
   useFocusEffect(
     useCallback(() => {
       if (!userId) return;
-      
+
       const tasksReference = collection(db, "tasks");
       const userDocRef = doc(db, "users", userId);
       const individualTaskQuery = query(tasksReference, where('assignees', 'array-contains', userDocRef));
-      const unsubscribe = onSnapshot(individualTaskQuery, (snapshot) => {
-        const individualTasks = snapshot.docs.map(doc => {
+      const unsubscribe = onSnapshot(individualTaskQuery, async (snapshot) => {
+        const individualTasks = snapshot.docs.map(async doc => {
           const data = doc.data() as Omit<Task, 'id'>;
-          return { 
+
+          const resolvedTask = await resolveTaskData({
             id: doc.id,
             description: data.description,
             creator: data.creator,
@@ -73,24 +74,27 @@ export default function GroupScreen() {
             is_done: data.is_done,
             createdAt: data.createdAt?.toDate(),
             updatedAt: data.updatedAt?.toDate(),
-            due_date: data.due_date?.toDate(), 
+            due_date: data.due_date?.toDate(),
             priority: data.priority ?? "None"
-          };
+          });
+          return resolvedTask;
+
         });
-        setIndividualTasks(individualTasks);
+        const resolvedTasks = await Promise.all(individualTasks);
+        setIndividualTasks(resolvedTasks);
 
-    });
+      });
 
-    return () => unsubscribe();
-  }, [userId])
+      return () => unsubscribe();
+    }, [userId])
 
-);
+  );
 
   // Load group name
   useFocusEffect(
     useCallback(() => {
       if (!groupId) return;
-      
+
       const loadGroupName = async () => {
         try {
           const groupDocRef = doc(db, "groups", groupId as string);
@@ -103,7 +107,7 @@ export default function GroupScreen() {
           console.error('Error loading group name:', error);
         }
       };
-      
+
       loadGroupName();
     }, [groupId])
   );
@@ -117,8 +121,8 @@ export default function GroupScreen() {
       const groupTaskQuery = query(tasksReference, where('group', '==', groupDocRef));
       const unsubscribe = onSnapshot(groupTaskQuery, (snapshot) => {
         const groupTasks = snapshot.docs.map(doc => {
-        const data = doc.data() as Omit<Task, 'id'>;
-          return { 
+          const data = doc.data() as Omit<Task, 'id'>;
+          return {
             id: doc.id,
             description: data.description,
             creator: data.creator,
@@ -127,18 +131,18 @@ export default function GroupScreen() {
             is_done: data.is_done,
             createdAt: data.createdAt?.toDate(),
             updatedAt: data.updatedAt?.toDate(),
-            due_date: data.due_date?.toDate(), 
+            due_date: data.due_date?.toDate(),
             priority: data.priority ?? "None",
           };
         });
         setGroupTasks(groupTasks);
         setLoading(false);
-    });
+      });
 
-    return () => unsubscribe();
-  }, [groupId])
+      return () => unsubscribe();
+    }, [groupId])
 
-);
+  );
   if (loading) {
     return (
       <ThemedView style={styles.container}>
@@ -161,30 +165,30 @@ export default function GroupScreen() {
             <ThemedText style={styles.dateText}>{dateString}</ThemedText>
             <ThemedText style={styles.groupName}>{groupName}</ThemedText>
           </View>
-        <ScrollView>
-          {/* Individual Tasks Section */}
-          <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>Individual Tasks</ThemedText>
-            {individualTasks.length > 0 ? (
-              <TaskList tasks={individualTasks} />
-            ) : (
-              <View style={styles.emptyContainer}>
-                <ThemedText style={styles.emptyText}>No individual tasks assigned to you.</ThemedText>
-              </View>
-            )}
-          </View>
+          <ScrollView>
+            {/* Individual Tasks Section */}
+            <View style={styles.section}>
+              <ThemedText style={styles.sectionTitle}>Individual Tasks</ThemedText>
+              {individualTasks.length > 0 ? (
+                <TaskList tasks={individualTasks} />
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <ThemedText style={styles.emptyText}>No individual tasks assigned to you.</ThemedText>
+                </View>
+              )}
+            </View>
 
-          {/* Group Tasks Section */}
-          <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>Group Tasks</ThemedText>
-            {groupTasks.length > 0 ? (
-              <TaskList tasks={groupTasks} />
-            ) : (
-              <View style={styles.emptyContainer}>
-                <ThemedText style={styles.emptyText}>No group tasks yet.</ThemedText>
-              </View>
-            )}
-          </View>
+            {/* Group Tasks Section */}
+            <View style={styles.section}>
+              <ThemedText style={styles.sectionTitle}>Group Tasks</ThemedText>
+              {groupTasks.length > 0 ? (
+                <TaskList tasks={groupTasks} />
+              ) : (
+                <View style={styles.emptyContainer}>
+                  <ThemedText style={styles.emptyText}>No group tasks yet.</ThemedText>
+                </View>
+              )}
+            </View>
           </ScrollView>
         </View>
       </SafeAreaView>
