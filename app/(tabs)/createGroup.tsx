@@ -9,23 +9,23 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import { useRouter } from "expo-router";
 
 import {
-    addDoc,
-    arrayUnion,
-    collection,
-    doc,
-    getDocs,
-    serverTimestamp,
-    updateDoc,
+  addDoc,
+  arrayUnion,
+  collection,
+  doc,
+  getDocs,
+  serverTimestamp,
+  updateDoc,
 } from "firebase/firestore";
 
 import React, { useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    ScrollView,
-    StyleSheet,
-    TextInput,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -45,7 +45,6 @@ export default function CreateGroupScreen() {
 
   // FORM STATE
   const [groupName, setGroupName] = useState("");
-  const [description, setDescription] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -136,7 +135,6 @@ export default function CreateGroupScreen() {
 
       const groupDoc = await addDoc(collection(db, "groups"), {
         group_name: groupName,
-        description: description || null,
         color: selectedColor,
         creator: creatorRef,
         group_members: memberRefs,
@@ -203,24 +201,6 @@ export default function CreateGroupScreen() {
                 {errors.groupName}
               </ThemedText>
             ) : null}
-
-            {/* DESCRIPTION OPTIONAL */}
-            <ThemedText style={styles.label}>Description (optional)</ThemedText>
-            <TextInput
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Describe your group..."
-              placeholderTextColor={isDark ? "#666" : "#999"}
-              multiline
-              style={[
-                styles.textArea,
-                {
-                  backgroundColor: isDark ? "#1a1a1a" : "white",
-                  color: text,
-                  borderColor: isDark ? "#444" : "#000",
-                },
-              ]}
-            />
 
             {/* MEMBERS */}
             <ThemedText style={styles.label}>Members *</ThemedText>
