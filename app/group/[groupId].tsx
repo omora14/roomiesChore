@@ -119,10 +119,12 @@ export default function GroupScreen() {
       const tasksReference = collection(db, "tasks");
       const groupDocRef = doc(db, "groups", groupId as string);
       const groupTaskQuery = query(tasksReference, where('group', '==', groupDocRef));
-      const unsubscribe = onSnapshot(groupTaskQuery, (snapshot) => {
-        const groupTasks = snapshot.docs.map(doc => {
+      const unsubscribe = onSnapshot(groupTaskQuery, async (snapshot) => {
+
+        const groupTasks = snapshot.docs.map(async doc => {
           const data = doc.data() as Omit<Task, 'id'>;
-          return {
+
+          const resolvedTask = await resolveTaskData({
             id: doc.id,
             description: data.description,
             creator: data.creator,
@@ -133,9 +135,13 @@ export default function GroupScreen() {
             updatedAt: data.updatedAt?.toDate(),
             due_date: data.due_date?.toDate(),
             priority: data.priority ?? "None",
-          };
+
+          });
+          return resolvedTask;
         });
-        setGroupTasks(groupTasks);
+
+        const resolvedTasks = await Promise.all(groupTasks);
+        setGroupTasks(resolvedTasks);
         setLoading(false);
       });
 
