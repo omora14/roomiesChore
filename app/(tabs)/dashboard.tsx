@@ -6,8 +6,9 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { getCurrentUserId } from '@/services/auth';
 import { getUpcomingTasksScalable, getUserData, getUserGroupsScalable, resolveTaskData } from '@/services/database';
+import { useFocusEffect } from "@react-navigation/native";
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -110,7 +111,40 @@ export default function DashboardScreen() {
     };
 
     loadDashboardData();
+
+
   }, []);
+
+  // 🔄 REFRESH EVERY TIME YOU RETURN TO DASHBOARD
+  useFocusEffect(
+    useCallback(() => {
+      const refreshDashboard = async () => {
+        try {
+          const currentUserId = await getCurrentUserId();
+
+          const [userData, groupsData, tasksData] = await Promise.all([
+            getUserData(currentUserId),
+            getUserGroupsScalable(currentUserId),
+            getUpcomingTasksScalable(currentUserId),
+          ]);
+
+          setUserFirstName(userData?.firstName || userData?.username || 'User');
+          setUserLastName(userData?.lastName || '');
+          setGroups(groupsData || []);
+
+          const resolvedTasks = await Promise.all(
+            (tasksData || []).map(resolveTaskData)
+          );
+          setTasks(resolvedTasks);
+
+        } catch (error) {
+          console.error('Dashboard refresh error:', error);
+        }
+      };
+
+      refreshDashboard();
+    }, [])
+  );
 
   // Format current date for display
   const currentDate = new Date();

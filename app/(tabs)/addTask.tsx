@@ -159,16 +159,31 @@ export default function AddTaskScreen() {
       console.log("Task created:", taskId);
       Alert.alert("Success", "Task created successfully!");
 
-      setTimeout(() => {
-        router.replace("/(tabs)/tasksScreen");
-      }, 500);
-    } catch (error) {
-      console.error("Error creating task:", error);
-      Alert.alert("Error", "Failed to create task. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+      // RESET FORM FIELDS HERE
+    setTitle("");
+    setAssignee("");
+    setGroupId("");
+    setDueDate("");
+    setPriority("");
+
+    setAssigneOptions([]);
+    setShowGroupDropdown(false);
+    setShowAssigneeDropdown(false);
+    setShowPriorityDropdown(false);
+
+    setErrors({ title: "", assigneeId: "", groupId: "" });
+
+    // Redirect after small delay
+    setTimeout(() => {
+      router.replace("/(tabs)/tasksScreen");
+    }, 500);
+  } catch (error) {
+    console.error("Error creating task:", error);
+    Alert.alert("Error", "Failed to create task. Please try again.");
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   return (
     <ThemedView style={styles.container}>
