@@ -39,7 +39,6 @@ export default function AddTaskScreen() {
   const isDark = theme === "dark";
 
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [assigneeId, setAssignee] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState("");
@@ -203,25 +202,6 @@ export default function AddTaskScreen() {
               onChangeText={setTitle}
             />
             {errors.title ? <ThemedText style={styles.errorText}>{errors.title}</ThemedText> : null}
-
-            {/* DESCRIPTION */}
-            <ThemedText style={styles.label}>Description</ThemedText>
-            <TextInput
-              style={[
-                styles.input,
-                styles.textArea,
-                {
-                  backgroundColor: isDark ? "#1a1a1a" : "white",
-                  color: textColor,
-                  borderColor: isDark ? "#444" : "#000",
-                },
-              ]}
-              placeholder="Add more details..."
-              placeholderTextColor={isDark ? "#666" : "#999"}
-              value={description}
-              onChangeText={setDescription}
-              multiline
-            />
 
             {/* GROUP */}
             <ThemedText style={styles.label}>Group *</ThemedText>
