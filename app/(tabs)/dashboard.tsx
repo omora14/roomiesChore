@@ -14,7 +14,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Interface for task data returned from database
 type Task = {
   id: string;
-  // title: string;
   description: string;
   creator: any;
   assignees: any[];

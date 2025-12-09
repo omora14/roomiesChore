@@ -369,15 +369,38 @@ export const resolveUserData = async (userRef: DocumentReference | string) => {
  * @param groupRef - DocumentReference or string ID of the group
  * @returns Group object with id, name, group_name, and color
  */
-export const resolveGroupData = async (groupRef: DocumentReference | string) => {
+export const resolveGroupData = async (groupRef: DocumentReference | string | any) => {
   try {
-    const groupDoc = typeof groupRef === 'string'
-      ? await getDoc(doc(db, 'groups', groupRef))
-      : await getDoc(groupRef);
+    let groupDoc;
 
-    if (groupDoc.exists()) {
+    // Handle different types of group references
+    if (typeof groupRef === 'string') {
+      // It's a string ID
+      groupDoc = await getDoc(doc(db, 'groups', groupRef));
+    } else if (groupRef && typeof groupRef === 'object') {
+      // It might be a DocumentReference or an object with an id property
+      if (groupRef.id) {
+        // It has an id property (could be a DocumentReference or plain object)
+        if (typeof groupRef.id === 'string') {
+          groupDoc = await getDoc(doc(db, 'groups', groupRef.id));
+        } else {
+          // It's a DocumentReference
+          groupDoc = await getDoc(groupRef);
+        }
+      } else {
+        // Try to use it as a DocumentReference directly
+        groupDoc = await getDoc(groupRef);
+      }
+    } else {
+      console.error('Invalid group reference type:', typeof groupRef, groupRef);
+      return { id: typeof groupRef === 'string' ? groupRef : 'unknown', name: 'Uncategorized', group_name: 'Uncategorized', color: '' };
+    }
+
+
+    if (groupDoc && groupDoc.exists()) {
       const data = groupDoc.data() as GroupData;
       const groupName = data.group_name || 'Uncategorized';
+      console.log('groupName is:', groupName, 'from ref:', groupRef);
       return {
         id: groupDoc.id,
         name: groupName,
