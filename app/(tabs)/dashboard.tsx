@@ -115,7 +115,7 @@ export default function DashboardScreen() {
 
   }, []);
 
-  // 🔄 REFRESH EVERY TIME YOU RETURN TO DASHBOARD
+  // REFRESH EVERY TIME YOU RETURN TO DASHBOARD
   useFocusEffect(
     useCallback(() => {
       const refreshDashboard = async () => {
