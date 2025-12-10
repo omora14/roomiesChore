@@ -10,7 +10,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useRouter } from 'expo-router';
 import { doc, DocumentReference, getDoc, onSnapshot } from 'firebase/firestore';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 type Task = {
     id: string;
@@ -234,8 +234,14 @@ export default function TasksScreen() {
                             </TouchableOpacity>
                         </View>
                     ) : tasks.length > 0 ? (
-                        <TaskList tasks={tasks} />
-                    ) : (
+                            <ScrollView
+                                style={{ flex: 1 }}
+                                contentContainerStyle={{ paddingBottom: 40 }}
+                                showsVerticalScrollIndicator={false}
+                            >
+                                <TaskList tasks={tasks} />
+                            </ScrollView>
+                        ) : (
                         <View style={styles.centerContainer}>
                             <MaterialIcons name="assignment" size={64} color={isDark ? '#666' : '#ccc'} />
                             <ThemedText style={styles.emptyText}>

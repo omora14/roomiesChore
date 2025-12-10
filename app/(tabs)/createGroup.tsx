@@ -128,6 +128,9 @@ export default function CreateGroupScreen() {
       setLoading(true);
 
       const creatorId = await getCurrentUserId();
+      console.log("creatorId:", creatorId);
+      console.log("selectedMemberIds:", selectedMemberIds);
+      console.log("all members (before refs):", [...selectedMemberIds, creatorId]);
 
       const allMembers = Array.from(new Set([...selectedMemberIds, creatorId]));
       const memberRefs = allMembers.map((id) => doc(db, "users", id));
@@ -148,7 +151,14 @@ export default function CreateGroupScreen() {
         });
       }
 
+       //  RESET FORM FIELDS HERE
+        setGroupName("");
+        setSelectedColor("");
+        setSelectedMemberIds([]);
+        setErrors({ groupName: "", members: "", color: "" });
+
       router.replace("/(tabs)/dashboard");
+
     } finally {
       setLoading(false);
     }
